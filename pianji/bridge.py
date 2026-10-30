@@ -74,8 +74,10 @@ class Bridge:
         if source_token not in self._grants: raise PathNotGranted('请通过文件夹选择窗口指定来源')
         root=self._grants[source_token]
         def work(cancel,progress):
-            groups=scan_source(root,cancel,progress); scan_id=uid(); self._scans[scan_id]={g.id:g for g in groups}
-            return {'scan_id':scan_id,'photos':[asdict(g) for g in groups],'cancelled':cancel()}
+            groups=scan_source(root,cancel,progress)
+            if cancel():return {'cancelled':True}
+            scan_id=uid(); self._scans[scan_id]={g.id:g for g in groups}
+            return {'scan_id':scan_id,'photos':[{**asdict(g),'relative_dir':Path(g.source_dir).relative_to(root).as_posix() if Path(g.source_dir)!=root else ''} for g in groups],'cancelled':False}
         return self._submit('扫描照片',work)
 
     @api
@@ -127,10 +129,18 @@ class Bridge:
         if scan_id:
             group=self._scans.get(scan_id,{}).get(photo_id)
             if not group: raise ValueError('来源照片已失效，请重新扫描')
-        else: group=self._library().group(photo_id,prefer_export=kind in ('export','export-thumb'))
-        result=self._previews.submit(self._cache.get,group,640 if kind in ('thumb','export-thumb') else 4096).result()
+            read=lambda:self._cache.get(group,640 if kind in ('thumb','export-thumb') else 4096)
+        else:
+            lib=self._library()
+            def read():
+                # Keep the snapshot paths and their file handles under one read
+                # lease. Journal writers wait, while other previews run in parallel.
+                with lib.journal.access.read():
+                    group=lib.group(photo_id,prefer_export=kind in ('export','export-thumb'))
+                    return self._cache.get(group,640 if kind in ('thumb','export-thumb') else 4096)
+        result=self._previews.submit(read).result()
         if result.error: return {'url':None,'error':result.error}
-        return {'url':'data:image/jpeg;base64,'+base64.b64encode(Path(result.path).read_bytes()).decode(),'error':None}
+        return {'url':'data:image/jpeg;base64,'+base64.b64encode(result.content).decode(),'error':None}
 
     @api
     def import_selected(self,scan_id,photo_ids,activity,formats):
@@ -167,6 +177,14 @@ class Bridge:
     @api
     def set_edited(self,photo_ids,value):
         lib=self._library(); return self._submit('整理修图阶段',lambda c,p:lib.set_edited(photo_ids,value,cancel=c,progress=p))
+
+    @api
+    def set_finished(self,photo_ids,value):
+        lib=self._library();return self._submit('标为成片' if value else '取消成片',lambda c,p:lib.set_finished(photo_ids,value,cancel=c,progress=p))
+
+    @api
+    def unlink_export(self,photo_id,asset_id):
+        lib=self._library();return self._submit('解除成片关联',lambda c,p:lib.unlink_export(photo_id,asset_id))
 
     @api
     def choose_and_link_export(self,photo_id):

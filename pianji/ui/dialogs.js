@@ -24,8 +24,11 @@ export async function settingsDialog(refresh){
   m.content.append(button('重试未完成的文件恢复',async()=>{try{m.dialog.close();await refresh('recover_pending')}catch(e){error(e)}},'outline'));
   m.submit('保存',async()=>{state.settings=await api('save_settings',{photoshop:path.value.trim()});toast('设置已保存')});
 }
-export function importDialog(start){
-  if(!state.settings.library_available){toast('请先选择照片库');return}
+export async function importDialog(start,refresh){
+  if(!state.settings.library_available){
+    const choice=await api('choose_library');if(!choice)return;
+    await refresh();
+  }
   const ids=[...state.selected.sd];if(!ids.length)return;
   const m=modal('导入所选照片');const name=field(m.content,'活动名称',state.activities.find(a=>a.id===state.activity)?.name||new Date().toLocaleDateString('sv-SE')+'_漫展');
   const list=el('datalist');list.id='activity-names';state.activities.forEach(a=>{const o=el('option');o.value=a.name;list.append(o)});m.content.append(list);name.setAttribute('list','activity-names');
@@ -53,10 +56,11 @@ export function managePeopleDialog(start){
   const label=el('label','','或合并到');label.append(target);m.content.append(label,el('p','','合并会移动全部原片和成片，人工归属将保留。'));
   m.buttons.prepend(button('合并人物',async()=>{try{if(select.value===target.value)throw new Error('请选择另一个人物');m.dialog.close();confirmAction('合并人物','确认将所选人物的全部照片移到目标人物？',()=>start('merge_people',select.value,target.value))}catch(e){m.err.textContent=e.message}},'outline'));
 }
-export function resultDialog(snapshot){
-  const m=modal(snapshot.status==='failed'?'任务未完成':snapshot.status==='cancelled'?'任务已取消':'部分文件需要处理');
+export function resultDialog(snapshot,kind=''){
+  const scanCancelled=kind==='scan'&&snapshot.status==='cancelled';
+  const m=modal(scanCancelled?'读取已取消':snapshot.status==='failed'?'任务未完成':snapshot.status==='cancelled'?'任务已取消':'部分文件需要处理');
   const result=snapshot.result||{};
-  m.content.append(el('p','',snapshot.status==='cancelled'?'已经完整完成的照片保留，未完成的文件已尝试恢复；可重新执行。':'已完成的照片保留，请检查下面的文件后重试。'));
+  m.content.append(el('p','',scanCancelled?'已停止读取，保留此前的选片结果。':snapshot.status==='cancelled'?'已经完整完成的照片保留，未完成的文件已尝试恢复；可重新执行。':'已完成的照片保留，请检查下面的文件后重试。'));
   const list=el('div','notice');list.style.maxHeight='300px';list.style.overflow='auto';
   for(const e of snapshot.errors||[])list.append(el('p','',(e.name||e.id||'')+' '+(e.message||JSON.stringify(e))));
   if(!list.children.length)list.textContent=`完成 ${result.imported?.length??result.classified??snapshot.done??0} 项。`;

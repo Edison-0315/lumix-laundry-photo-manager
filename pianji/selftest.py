@@ -45,6 +45,13 @@ def run(root):
             if not person: person=check(bridge.create_person(p['activity_id'],'模特 测试'))
             wait(check(bridge.set_person([p['id']],person['id']))['task_id'])
             wait(check(bridge.set_edited([p['id']],True))['task_id'])
+            wait(check(bridge.set_finished([p['id']],True))['task_id'])
+            assert bridge._lib.catalog.photo(p['id'])['primary_export_id']
+            wait(check(bridge.set_finished([p['id']],False))['task_id'])
+            assert not bridge._lib.catalog.photo(p['id'])['primary_export_id']
+            assert bridge._lib.catalog.photo(p['id'])['edited']
+            assert all(Path(a['path']).is_file() for a in bridge._lib.catalog.photo(p['id'])['assets'])
+            result['checks'].append('direct JPEG finished/unlink preserve originals and editing stage')
             wait(check(bridge.choose_and_link_export(p['id']))['task_id'])
             p=bridge._lib.catalog.photo(p['id']);assert p['edited'] and p['manual_person'] and p['primary_export_id']
             assert all(Path(a['path']).is_file() for a in p['assets'])

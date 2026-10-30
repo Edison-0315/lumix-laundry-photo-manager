@@ -11,10 +11,12 @@ def scan_source(root,cancel=lambda:False,progress=lambda n,t,m:None):
     root=Path(root).resolve()
     if not root.is_dir(): raise ValueError('来源文件夹不存在')
     paired={}
+    progress(0,0,'正在查找照片')
     for parent,dirs,files in os.walk(root,followlinks=False):
+        if cancel(): return []
         dirs[:]=[d for d in dirs if not (Path(parent)/d).is_symlink() and not (Path(parent)/d).is_junction()]
         for name in sorted(files):
-            if cancel(): return _groups(paired,progress)
+            if cancel(): return []
             p=Path(parent)/name
             if p.is_symlink() or not p.resolve().is_relative_to(root): continue
             kind=KINDS.get(p.suffix.lower())
@@ -26,11 +28,12 @@ def scan_source(root,cancel=lambda:False,progress=lambda n,t,m:None):
             ident=hashlib.sha256(('\0'.join(key)).encode()).hexdigest()[:32]
             row=paired.setdefault(key,PhotoGroup(ident,str(p.parent),stem,None,[]))
             row.files.append(FileAsset(hashlib.sha256(str(p).encode()).hexdigest()[:32],ident,kind,str(p)))
-    return _groups(paired,progress)
+    return _groups(paired,progress,cancel)
 
-def _groups(paired,progress):
+def _groups(paired,progress,cancel=lambda:False):
     groups=[g for g in paired.values() if any(a.kind!='xmp' for a in g.files)]
     for n,g in enumerate(groups,1):
+        if cancel(): return groups[:n-1]
         jpg=next((a for a in g.files if a.kind=='jpeg'),None)
         if jpg:
             try:

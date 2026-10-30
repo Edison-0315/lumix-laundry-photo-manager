@@ -16,6 +16,9 @@ class JobManager:
             with self._lock:
                 s=self._tasks[ident]; s.done=done; s.total=total; s.message=message
         def run():
+            if event.is_set():
+                with self._lock:self._tasks[ident].status='cancelled';self._tasks[ident].result={'cancelled':True}
+                return
             with self._lock: self._tasks[ident].status='running'
             try:
                 result=fn(event.is_set,progress)

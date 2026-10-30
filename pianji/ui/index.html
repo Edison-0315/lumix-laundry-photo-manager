@@ -7,15 +7,17 @@
 <div class="shell">
   <aside class="sidebar"><nav><button data-view="sd" class="nav active">SD 卡选片</button><button data-view="library" class="nav">照片库</button></nav>
     <section><div class="section-label">活动</div><div id="activities"></div></section>
+    <section id="source-section" hidden><div class="section-label">来源文件夹</div><div id="source-folders"></div></section>
     <section id="people-section" hidden><div class="section-head"><span class="section-label">人物</span><button id="new-person" aria-label="新建人物">＋</button></div><div id="people"></div><button id="manage-people" class="muted small">管理人物</button></section>
     <div class="sidebar-bottom"><span id="library-path" class="small muted">尚未选择照片库</span><button id="choose-library" class="outline">选择照片库</button></div>
   </aside>
   <main>
     <div class="pagehead"><div><h1 id="title">SD 卡选片</h1><p id="subtitle" class="muted">选择SD卡或照片文件夹，在这里查看和选片</p></div><button id="choose-source" class="outline">选择来源</button><button id="classify" class="outline" hidden>识别人脸</button></div>
     <div id="stage-tabs" class="tabs" hidden><button data-stage="all" class="active">全部照片</button><button data-stage="pending">选出原片</button><button data-stage="edited">已修原片</button><button data-stage="exports">成片</button></div>
+    <div id="source-breadcrumbs" class="breadcrumbs" hidden></div>
     <div class="toolbar"><label>日期 <select id="date-filter"><option value="all">所有日期</option></select></label><button id="select-all">全选</button><label class="check-label"><input id="only-selected" type="checkbox">只看已选</label><div class="spacer"></div><div class="thumbnail-control"><span class="small muted">缩略图</span><button id="thumb-smaller" aria-label="缩小缩略图">−</button><input id="thumb-size" type="range" min="80" max="720" step="20" value="240" aria-label="缩略图大小"><button id="thumb-larger" aria-label="放大缩略图">＋</button></div></div>
     <div id="gallery" tabindex="0" aria-label="照片网格"></div>
-    <footer><span id="photo-count" class="muted">0 张照片</span><span id="selection-count">已选 0 张</span><div class="spacer"></div><button id="import" class="primary" disabled>导入所选</button><div id="library-actions" hidden><button id="assign" disabled>调整人物</button><button id="mark-edited" disabled>标为已修</button><button id="mark-pending" disabled>恢复待修</button></div></footer>
+    <footer><span id="photo-count" class="muted">0 张照片</span><span id="selection-count">已选 0 张</span><div class="spacer"></div><button id="import" class="primary" disabled>导入所选</button><div id="library-actions" hidden><button id="assign" disabled>调整人物</button><button id="mark-edited" disabled>标为已修</button><button id="mark-pending" disabled>恢复待修</button><button id="mark-finished" disabled>标为成片</button><button id="unmark-finished" disabled hidden>取消成片</button></div></footer>
   </main>
   <aside id="inspector" class="inspector"><div class="empty"><span>选择一张照片</span><small>单击选择 · 双击查看大图<br>拖动可批量选择</small></div></aside>
 </div>

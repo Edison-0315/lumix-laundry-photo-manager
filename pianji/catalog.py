@@ -19,6 +19,7 @@ class Catalog:
             CREATE TABLE IF NOT EXISTS photos(id TEXT PRIMARY KEY,activity_id TEXT NOT NULL,person_id TEXT NOT NULL,stem TEXT NOT NULL,captured_at TEXT,edited INTEGER DEFAULT 0,manual_person INTEGER DEFAULT 0,opened_at TEXT,primary_export_id TEXT,signature TEXT NOT NULL,UNIQUE(activity_id,signature));
             CREATE TABLE IF NOT EXISTS assets(id TEXT PRIMARY KEY,photo_id TEXT NOT NULL,kind TEXT NOT NULL,path TEXT UNIQUE NOT NULL,sha256 TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS operations(id TEXT PRIMARY KEY,kind TEXT NOT NULL,phase TEXT NOT NULL,payload TEXT NOT NULL,error TEXT);
+            CREATE TABLE IF NOT EXISTS detached_exports(id TEXT PRIMARY KEY,photo_id TEXT NOT NULL,path TEXT UNIQUE NOT NULL,sha256 TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS import_members(activity_id TEXT NOT NULL,kind TEXT NOT NULL,sha256 TEXT NOT NULL,photo_id TEXT NOT NULL,PRIMARY KEY(activity_id,kind,sha256,photo_id));
             INSERT OR IGNORE INTO import_members SELECT p.activity_id,a.kind,a.sha256,p.id FROM assets a JOIN photos p ON p.id=a.photo_id WHERE a.kind IN ('jpeg','raw');
             ''')

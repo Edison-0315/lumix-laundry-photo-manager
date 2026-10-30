@@ -2,6 +2,42 @@
 from pathlib import Path
 import os
 import weakref
+import threading
+from contextlib import contextmanager
+
+class FileAccess:
+    """Concurrent file readers; a reentrant writer for journal transactions."""
+    def __init__(self):
+        self._condition=threading.Condition(threading.RLock())
+        self._writer=None;self._depth=0;self._readers=0;self._waiting=0
+
+    def __enter__(self):
+        ident=threading.get_ident()
+        with self._condition:
+            if self._writer==ident:self._depth+=1;return self
+            self._waiting+=1
+            try:
+                while self._writer is not None or self._readers:self._condition.wait()
+                self._writer=ident;self._depth=1
+            finally:self._waiting-=1
+        return self
+
+    def __exit__(self,*args):
+        with self._condition:
+            self._depth-=1
+            if self._depth==0:self._writer=None;self._condition.notify_all()
+
+    @contextmanager
+    def read(self):
+        with self._condition:
+            own_writer=self._writer==threading.get_ident()
+            if not own_writer:
+                while self._writer is not None or self._waiting:self._condition.wait()
+                self._readers+=1
+        try:yield
+        finally:
+            if not own_writer:
+                with self._condition:self._readers-=1;self._condition.notify_all()
 
 def _release(stream):
     try:

@@ -26,6 +26,7 @@ class PhotoGroup:
 class PreviewResult:
     path: Optional[str] = None
     error: Optional[str] = None
+    content: Optional[bytes] = None
 
 @dataclass
 class Operation:

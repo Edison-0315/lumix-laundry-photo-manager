@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 from PyInstaller.utils.hooks import collect_data_files
 
 project = Path(SPECPATH).parent
@@ -7,4 +8,4 @@ datas += collect_data_files('webview')
 a=Analysis([str(project/'run.py')],pathex=[str(project)],binaries=[],datas=datas,hiddenimports=['webview.platforms.edgechromium','pianji.selftest'],hookspath=[],hooksconfig={},runtime_hooks=[],excludes=['tkinter','pytest','PyInstaller'],noarchive=False)
 pyz=PYZ(a.pure)
 exe=EXE(pyz,a.scripts,[],exclude_binaries=True,name='片集',debug=False,bootloader_ignore_signals=False,strip=False,upx=False,console=False,disable_windowed_traceback=False)
-coll=COLLECT(exe,a.binaries,a.datas,strip=False,upx=False,name='片集-Windows')
+coll=COLLECT(exe,a.binaries,a.datas,strip=False,upx=False,name=os.environ.get('PIANJI_BUNDLE_NAME','片集-Windows-0.2'))

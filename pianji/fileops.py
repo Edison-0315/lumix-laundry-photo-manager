@@ -6,6 +6,7 @@ import json
 import threading
 from .domain import uid
 from .paths import inside
+from .locking import FileAccess
 
 def digest(path):
     h=hashlib.sha256()
@@ -30,10 +31,10 @@ def transfer(src,dst,move):
             writer.flush(); os.fsync(writer.fileno())
 
 class FileJournal:
-    def __init__(self,catalog): self.catalog=catalog; self.lock=threading.RLock()
+    def __init__(self,catalog): self.catalog=catalog; self.lock=threading.RLock();self.access=FileAccess()
 
     def execute(self,kind,changes,sql,payload=None):
-        with self.lock:
+        with self.lock,self.access:
             opid=uid()
             for c in changes:
                 inside(self.catalog.root,c['dst'])
@@ -70,6 +71,9 @@ class FileJournal:
                 raise
 
     def rollback(self,data):
+        with self.access:return self._rollback(data)
+
+    def _rollback(self,data):
         errors=[]
         for c in reversed(data['changes']):
             try:
@@ -93,7 +97,7 @@ class FileJournal:
 
     def recover_pending(self):
         recovered=[]; errors=[]
-        with self.lock:
+        with self.lock,self.access:
             for op in self.catalog.rows("SELECT id FROM operations WHERE phase!='committed'"):
                 data=self.catalog.operation(op['id'])['payload']
                 failures=self.rollback(data)

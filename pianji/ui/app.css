@@ -2,3 +2,5 @@
 
 /* Explicit intrinsic rows keep a large library scrollable instead of squeezing cards. */
 #gallery{grid-auto-rows:max-content}.photo{height:max-content}.picture{width:100%}
+
+.breadcrumbs{display:flex;align-items:center;gap:6px;padding:0 20px;min-height:36px;border-bottom:1px solid var(--line);font-size:12px}.breadcrumbs button{min-height:30px;padding:4px 8px}.folder-card{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;min-height:100px;padding:20px;border:1px solid var(--line);background:var(--panel)}footer{flex-wrap:wrap;gap:8px 12px}#library-actions{flex-wrap:wrap}#source-folders{max-height:260px;overflow:auto}#source-folders .side-item{font-size:12px}#gallery.dragging{cursor:crosshair}

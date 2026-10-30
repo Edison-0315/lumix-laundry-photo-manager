@@ -157,11 +157,14 @@ class Library:
 
     def _batch(self,ids,fn,cancel=lambda:False,progress=lambda n,t,m:None):
         with self.lock:
-            self._ready(); result={'operations':[],'errors':[],'cancelled':False}
+            self._ready(); result={'operations':[],'photo_ids':[],'skipped':0,'errors':[],'cancelled':False}
             unique=list(dict.fromkeys(ids))
             for n,ident in enumerate(unique):
                 if cancel():result['cancelled']=True;break
-                try: result['operations'].append(fn(self.catalog.photo(ident)))
+                try:
+                    operation=fn(self.catalog.photo(ident))
+                    if operation:result['operations'].append(operation);result['photo_ids'].append(ident)
+                    else:result['skipped']+=1
                 except Exception as e: result['errors'].append({'id':ident,'message':str(e)})
                 finally:progress(n+1,len(unique),'整理照片文件')
             return result
@@ -188,9 +191,42 @@ class Library:
                 if str(Path(a['path']).resolve())!=d:
                     changes.append({'src':a['path'],'dst':d,'sha256':a['sha256'],'move':True})
                 sql.append(self._asset_sql(a,d))
-            changes.append({'src':str(source),'dst':dst,'sha256':sha,'move':False})
+            # A directly marked JPEG may be one of the originals being moved.
+            # Copy it before relocating the originals, in the same journal.
+            changes.insert(0,{'src':str(source),'dst':dst,'sha256':sha,'move':False})
             sql += [('INSERT INTO assets VALUES(?,?,?,?,?)',(ident,photo_id,'export',dst,sha)),('UPDATE photos SET edited=1,primary_export_id=? WHERE id=?',(ident,photo_id))]
             return self.journal.execute('export',changes,sql,{'photo_id':photo_id,'export_id':ident})
+
+    def set_finished(self,ids,value,cancel=lambda:False,progress=lambda n,t,m:None):
+        def apply(photo):
+            if value:
+                if photo['primary_export_id']:return None
+                jpeg=next((a for a in photo['assets'] if a['kind']=='jpeg'),None)
+                if not jpeg:raise ValueError('RAW不能直接作为成片，请先导出JPEG后关联')
+                return self.link_export(photo['id'],jpeg['path'])
+            return self.unlink_export(photo['id'])
+        return self._batch(ids,apply,cancel,progress)
+
+    def unlink_export(self,photo_id,asset_id=None):
+        with self.lock:
+            self._ready();photo=self.catalog.photo(photo_id)
+            removed=[a for a in photo['assets'] if a['kind']=='export' and (asset_id is None or a['id']==asset_id)]
+            if not removed:
+                if asset_id:raise ValueError('成片关联已不存在，请刷新后重试')
+                return None
+            changes=[];sql=[]
+            for a in removed:
+                source=inside(self.root,a['path'])
+                if source.exists():
+                    sha=digest(source);destination=inside(self.root,self.catalog.meta/'取消关联保留'/photo_id/a['id']/source.name)
+                    changes.append({'src':str(source),'dst':str(destination),'sha256':sha,'move':True})
+                else:
+                    sha=a['sha256'];destination=source
+                sql += [('INSERT INTO detached_exports VALUES(?,?,?,?)',(a['id'],photo_id,str(destination),sha)),('DELETE FROM assets WHERE id=?',(a['id'],))]
+            remaining=[a for a in photo['assets'] if a['kind']=='export' and a not in removed]
+            primary=photo['primary_export_id'] if any(a['id']==photo['primary_export_id'] for a in remaining) else (remaining[-1]['id'] if remaining else None)
+            sql.append(('UPDATE photos SET primary_export_id=? WHERE id=?',(primary,photo_id)))
+            return self.journal.execute('unlink_export',changes,sql,{'photo_id':photo_id,'detached':[a['id'] for a in removed]})
 
     def undo_operation(self,opid):
         with self.lock:

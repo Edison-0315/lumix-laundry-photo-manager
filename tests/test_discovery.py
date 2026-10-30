@@ -23,3 +23,9 @@ def test_corrupt_photo_does_not_stop_scan(tmp_path):
     groups = scan_source(tmp_path)
     assert len(groups) == 2
     assert next(g for g in groups if g.stem=='bad').error
+
+def test_cancel_stops_metadata_reads_between_files(tmp_path):
+    for n in range(12):jpg(tmp_path/f'{n:02}.jpg')
+    processed=[]
+    scan_source(tmp_path,cancel=lambda:len(processed)>=1,progress=lambda n,t,m:processed.append(n) if n>0 else None)
+    assert processed==[1]
