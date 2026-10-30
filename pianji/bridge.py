@@ -184,7 +184,11 @@ class Bridge:
     @api
     def list_photos(self,filters):
         lib=self._library(); photos=lib.catalog.photos(filters.get('activity_id'),trashed=bool(filters.get('trashed')))
-        for p in photos: p['missing']=any(not Path(a['path']).is_file() for a in p['assets'])
+        for p in photos:
+            p['missing']=any(not Path(a['path']).is_file() for a in p['assets'])
+            if filters.get('trashed'):
+                p['purge_pending']=bool(lib.catalog.rows('SELECT photo_id FROM purges WHERE photo_id=?',(p['id'],)))
+                p['file_count']=len(p['assets'])+lib.catalog.rows('SELECT count(*) AS n FROM detached_exports WHERE photo_id=?',(p['id'],))[0]['n']
         return photos
 
     @api
@@ -194,6 +198,10 @@ class Bridge:
     @api
     def restore_photos(self,photo_ids):
         lib=self._library();return self._submit('恢复照片',lambda c,p:lib.restore_photos(photo_ids,c,p))
+
+    @api
+    def purge_trash(self,photo_ids):
+        lib=self._library();return self._submit('永久删除照片',lambda c,p:lib.purge_trash(photo_ids,c,p))
 
     @api
     def get_preview(self,photo_id,kind='thumb',scan_id=None):

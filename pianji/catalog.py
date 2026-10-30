@@ -22,6 +22,7 @@ class Catalog:
             CREATE TABLE IF NOT EXISTS detached_exports(id TEXT PRIMARY KEY,photo_id TEXT NOT NULL,path TEXT UNIQUE NOT NULL,sha256 TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS import_members(activity_id TEXT NOT NULL,kind TEXT NOT NULL,sha256 TEXT NOT NULL,photo_id TEXT NOT NULL,PRIMARY KEY(activity_id,kind,sha256,photo_id));
             CREATE TABLE IF NOT EXISTS trashed_photos(photo_id TEXT PRIMARY KEY,payload TEXT NOT NULL,deleted_at TEXT DEFAULT CURRENT_TIMESTAMP);
+            CREATE TABLE IF NOT EXISTS purges(photo_id TEXT PRIMARY KEY,payload TEXT NOT NULL,error TEXT);
             INSERT OR IGNORE INTO import_members SELECT p.activity_id,a.kind,a.sha256,p.id FROM assets a JOIN photos p ON p.id=a.photo_id WHERE a.kind IN ('jpeg','raw');
             ''')
 

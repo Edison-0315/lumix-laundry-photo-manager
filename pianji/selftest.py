@@ -80,6 +80,10 @@ def run(root):
             bridge._close()
             reopened_library=Library(library)
             reopened=reopened_library.catalog.photo(p['id']);assert reopened['primary_export_id']==p['primary_export_id']
+            assert not reopened_library.trash_photos([p['id']])['errors']
+            erased=reopened_library.purge_trash([p['id']]);assert not erased['errors'] and erased['deleted']==[p['id']]
+            assert not reopened_library.catalog.rows('SELECT id FROM photos WHERE id=?',(p['id'],))
+            result['checks'].append('packaged permanent deletion removes owned fixture trash only')
             reopened_library.close()
             after={str(f.relative_to(source)):hashlib.sha256(f.read_bytes()).hexdigest() for f in source.rglob('*') if f.is_file()}
             assert before==after;result['checks'].append('reopen persistence; SD hashes unchanged')

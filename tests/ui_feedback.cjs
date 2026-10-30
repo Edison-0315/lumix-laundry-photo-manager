@@ -34,7 +34,7 @@ const server=http.createServer((req,res)=>{
   try{
     await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
     await page.getByRole('button',{name:'选择来源',exact:true}).click();
-    await page.getByRole('button',{name:'文件夹 DCIM/100',exact:true}).dblclick();
+    await page.getByRole('button',{name:'文件夹 DCIM/100',exact:true}).click();
     await page.locator('.photo').first().waitFor();assert.equal(await page.locator('.photo').count(),1);assert.equal(await page.locator('.photo .name').first().textContent(),'a');
     console.log('folders ok');
     await page.locator('.photo').first().click();

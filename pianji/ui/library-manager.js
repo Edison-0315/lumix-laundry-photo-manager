@@ -3,6 +3,7 @@ import {state,el,button,resetLibrarySelection,toast} from './store.js';
 import {modal} from './dialogs.js';
 import {invalidateLibraryPreviews} from './previews.js';
 import {clearChoices} from './choice-list.js';
+import {clearHistory} from './navigation.js';
 
 export async function libraryDialog(refresh){
   if(state.busy){toast('请等待当前任务完成');return false}
@@ -12,7 +13,7 @@ export async function libraryDialog(refresh){
     m.dialog.addEventListener('close',()=>{m.dialog.removeEventListener('cancel',preventCancel);if(!done)resolve(false)},{once:true});
     const activate=async choice=>{
       if(!choice)return;
-      resetLibrarySelection();clearChoices();state.browse='folders';state.activity=null;state.person='all';state.stage='all';state.date='all';state.format='all';invalidateLibraryPreviews();
+      resetLibrarySelection();clearChoices();clearHistory();state.browse='folders';state.activity=null;state.person='all';state.stage='all';state.date='all';state.format='all';invalidateLibraryPreviews();
       await refresh();done=true;resolve(true);if(m.content.isConnected&&m.dialog.open)m.dialog.close();
       if(choice.recovery?.errors?.length)toast('有文件需要恢复，请关闭占用程序后在设置中重试');
     };

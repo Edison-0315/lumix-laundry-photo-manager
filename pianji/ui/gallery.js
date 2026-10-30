@@ -1,4 +1,4 @@
-import {state,$,selected,visible,current,assets,el,button,error,childFolders,libraryFolderMode,libraryFolders} from './store.js';
+import {state,$,selected,visible,current,assets,el,button,error,childFolders,libraryFolderMode,libraryFolders,sourceDirs} from './store.js';
 import {bindChoice,choices,folderScope,syncChoices} from './choice-list.js';
 import {api} from './api.js';
 import {preview} from './previews.js';
@@ -6,6 +6,7 @@ let inspectorHook=()=>{},folderHook=()=>{},observer,queue=[],active=0,revision=0
 export function onInspector(fn){inspectorHook=fn}
 export function onFolder(fn){folderHook=fn}
 export function syncSelection(){
+  $('#back').disabled=state.busy||!state.history?.length;
   const set=selected();
   for(const id of new Set([...drawn,...set])){if(drawn.has(id)===set.has(id))continue;const card=cards.get(id);if(!card)continue;const checked=set.has(id);card.classList.toggle('checked',checked);card.setAttribute('aria-selected',String(checked));const pick=card.querySelector('.pick');pick.textContent=checked?'✓':'';pick.setAttribute('aria-pressed',String(checked))}
   drawn=new Set([...set].filter(id=>cards.has(id)));
@@ -56,21 +57,23 @@ export function renderGallery(){
   if(!rows.some(p=>p.id===state.current)){const next=rows.find(p=>selected().has(p.id))?.id||null;if(next!==state.current){state.current=next;queueMicrotask(inspectorHook)}}
   grid.style.setProperty('--thumb-size',state.thumbSize+'px');
   $('#photo-count').textContent=`${rows.length} 张照片`;
-  const folders=state.view==='sd'?childFolders().map(path=>({key:path,label:path.split('/').pop(),kind:'source',path})):libraryFolders();
+  const targets=new Map();
+  const folders=state.view==='sd'?childFolders().map(path=>({key:path,label:path.split('/').pop(),kind:'source',path,examples:state.sourcePhotos.filter(p=>sourceDirs(p).some(dir=>dir===path||dir.startsWith(path+'/'))&&(state.format==='all'||assets(p).some(a=>a.kind===state.format))&&(state.date==='all'||(p.captured_at?.slice(0,10)||'unknown')===state.date)).slice(0,3)})):libraryFolders();
   if(libraryFolderMode()){const valid=new Set(folders.map(f=>f.key)),chosen=choices(folderScope());for(const key of chosen)if(!valid.has(key))chosen.delete(key)}
   if(libraryFolderMode())$('#photo-count').textContent=`${folders.filter(f=>!state.onlySelected||choices(folderScope()).has(f.key)).length} 个文件夹`;
   for(const folder of folders){
     if(state.onlySelected&&!choices(folderScope()).has(folder.key))continue;
     const b=button('',()=>{},'folder-card '+(folder.kind==='person'?'person-folder':folder.kind==='stage'?'stage-folder':''));
     if(folder.person)b.dataset.person=folder.person;if(folder.stage)b.dataset.stage=folder.stage;
-    b.append(el('span','folder-icon','▱'),el('strong','',folder.label),el('span','small muted',folder.count===undefined?'双击进入':folder.count+' 张照片 · 双击进入'));
+    const art=el('div','folder-art');art.append(el('span','folder-icon','▱'));
+    if(folder.examples?.length){const samples=el('div','folder-samples');for(const photo of folder.examples){const slot=el('div','folder-sample');samples.append(slot);targets.set(slot,photo)}art.append(samples)}
+    b.append(art,el('strong','',folder.label),el('span','small muted',folder.count===undefined?'双击进入':folder.count+' 张照片 · 双击进入'));
     b.setAttribute('aria-label',folder.label);bindChoice(b,folderScope(),folder.key,()=>folderHook(folder),syncSelection);grid.append(b);
   }
   if(!rows.length&&!folders.length){
     const empty=el('div','empty');empty.append(el('div','empty-icon','▧'),el('span','',state.view==='sd'?(state.source?'没有符合条件的照片':'从SD卡开始选片'):(state.settings.library_available?'当前筛选下没有照片':'先选择照片库')),
       el('small','',state.view==='sd'?'选择来源后，单击选中、双击查看，拖动可批量选择':'导入的照片将在这里按活动、人物与修图阶段整理'));grid.append(empty);
   }
-  const targets=new Map();
   for(const p of rows){
     const card=el('article','photo');card.dataset.id=p.id;card.setAttribute('role','option');
     const picture=el('div','picture');picture.append(el('span','placeholder','正在读取…'));targets.set(picture,p);

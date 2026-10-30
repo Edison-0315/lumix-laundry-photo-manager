@@ -143,12 +143,12 @@ class Library:
         self.journal.execute('supplement',changes,sql,{'photo_id':photo['id']})
         return True
 
-    def _move(self,photo,person_id=None,edited=None,manual=None,person_folder=None,extra_sql=None):
+    def _move(self,photo,person_id=None,edited=None,manual=None,person_folder=None,extra_sql=None,allow_missing=False):
         person_id=person_id or photo['person_id']; edited=bool(photo['edited']) if edited is None else bool(edited)
-        assets=self._fresh_assets(photo); destinations=self._destinations(assets,photo['activity_id'],person_id,edited,photo['stem'],person_folder)
+        assets=self._fresh_assets(photo,allow_missing=allow_missing); destinations=self._destinations(assets,photo['activity_id'],person_id,edited,photo['stem'],person_folder)
         changes=[]; sql=[]
         for a,d in zip(assets,destinations):
-            if str(Path(a['path']).resolve())!=d:
+            if str(Path(a['path']).resolve())!=d and not a.get('_missing'):
                 changes.append({'src':a['path'],'dst':d,'sha256':a['sha256'],'move':True})
             sql.append(self._asset_sql(a,d))
         manual=photo['manual_person'] if manual is None else manual
@@ -218,6 +218,8 @@ class Library:
 
     def restore_photos(self,ids,cancel=lambda:False,progress=lambda n,t,m:None):
         def apply(photo):
+            from .permanent import pending
+            if pending(self.catalog,photo['id']):raise ValueError('此照片的永久删除尚未完成，不能恢复；请关闭占用程序后重试永久删除')
             record=self.catalog.rows('SELECT payload FROM trashed_photos WHERE photo_id=?',(photo['id'],))
             if not record:return None
             changes=[];sql=[]
@@ -240,6 +242,10 @@ class Library:
             sql.append(('DELETE FROM trashed_photos WHERE photo_id=?',(photo['id'],)))
             return self.journal.execute('restore',changes,sql,{'photo_id':photo['id']})
         return self._batch(ids,apply,cancel,progress,include_trashed=True)
+
+    def purge_trash(self,ids,cancel=lambda:False,progress=lambda n,t,m:None):
+        from .permanent import purge
+        return purge(self,ids,cancel,progress)
 
     def link_export(self,photo_id,file):
         with self.lock:
@@ -345,7 +351,7 @@ class Library:
                     if person['role']:raise ValueError('合照和待分类是固定分类，不能删除')
                     target=next(p for p in self.catalog.people(person['activity_id']) if p['role']=='unclassified')
                     ids=[p['id'] for p in self.catalog.photos(person['activity_id']) if p['person_id']==ident]
-                    batch=self.set_person(ids,target['id'],cancel=cancel,progress=progress)
+                    batch=self._batch(ids,lambda photo:self._move(photo,person_id=target['id'],manual=True,allow_missing=True),cancel,progress)
                     for key in ('operations','photo_ids','errors'):result[key].extend(batch[key])
                     if batch['cancelled'] or cancel():result['cancelled']=True;break
                     if batch['errors']:continue

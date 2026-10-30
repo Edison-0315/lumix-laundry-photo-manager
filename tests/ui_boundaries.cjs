@@ -32,9 +32,9 @@ function fixture(){
       assert.equal(await p.locator('.photo[data-id=a]').count(),0);assert.equal(await p.locator('.photo.checked').count(),1);
     });
     await scenario('person and activity changes reset selected-only filter',async p=>{
-      await p.locator('#select-all').click();await p.locator('#only-selected').check();await p.locator('#people button').filter({hasText:'人物一'}).dblclick();await p.locator('#toggle-browse').click();
+      await p.locator('#select-all').click();await p.locator('#only-selected').check();await p.locator('#people button').filter({hasText:'人物一'}).click();
       assert.equal(await p.locator('#only-selected').isChecked(),false);assert.equal(await p.locator('.photo').count(),1);
-      await p.locator('.photo').click();await p.locator('#only-selected').check();await p.locator('#activities button').filter({hasText:'活动二'}).dblclick();await p.locator('#toggle-browse').click();
+      await p.locator('.photo').click();await p.locator('#only-selected').check();await p.locator('#activities button').filter({hasText:'活动二'}).click();await p.locator('#toggle-browse').click();
       assert.equal(await p.locator('#only-selected').isChecked(),false);assert.equal(await p.locator('.photo').count(),1);
     });
     assert.deepEqual(failures,[]);
