@@ -4,6 +4,7 @@ import hashlib
 import os
 import json
 import threading
+import logging
 from .domain import uid
 from .paths import inside
 from .locking import FileAccess
@@ -63,12 +64,19 @@ class FileJournal:
                 with self.catalog.connect() as db:
                     for statement,args in sql: db.execute(statement,args)
                     db.execute("UPDATE operations SET phase='committed' WHERE id=?",(opid,))
-                return opid
             except Exception as e:
                 failures=self.rollback(data)
                 with self.catalog.connect() as db:
                     db.execute('UPDATE operations SET phase=?,error=? WHERE id=?',('needs_attention' if failures else 'committed',str(e)+(('; '+str(failures)) if failures else ''),opid))
                 raise
+            # Metadata is committed. Cleanup must never enter the file rollback
+            # path, even if an unexpected filesystem/runtime error escapes it.
+            try:
+                from .cleanup import prune_empty
+                directories=[Path(c['src']).parent for c in changes if c['move']]+data.get('cleanup_dirs',[])
+                prune_empty(self.catalog.root,directories)
+            except Exception:logging.exception('Committed photo operation succeeded; empty folder cleanup failed')
+            return opid
 
     def rollback(self,data):
         with self.access:return self._rollback(data)

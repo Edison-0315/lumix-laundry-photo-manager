@@ -25,11 +25,11 @@ def purge(library,photo_ids,cancel=lambda:False,progress=lambda n,t,m:None):
             try:
                 if not catalog.rows('SELECT photo_id FROM trashed_photos WHERE photo_id=?',(ident,)):raise ValueError('只能永久删除当前照片库回收站中的照片')
                 trash_root=inside(library.root,catalog.meta/'回收站'/ident)
+                assets=catalog.assets(ident)+catalog.rows('SELECT * FROM detached_exports WHERE photo_id=?',(ident,))
                 records=pending(catalog,ident)
                 if records:files=json.loads(records[0]['payload'])
                 else:
                     files=[];receipts=trash_receipt(catalog,ident)
-                    assets=catalog.assets(ident)+catalog.rows('SELECT * FROM detached_exports WHERE photo_id=?',(ident,))
                     for asset in assets:
                         path=inside(library.root,asset['path'])
                         # Missing originals retain old normal paths. They must
@@ -54,6 +54,9 @@ def purge(library,photo_ids,cancel=lambda:False,progress=lambda n,t,m:None):
                         db.execute(f'DELETE FROM {table} WHERE photo_id=?',(ident,))
                     db.execute('DELETE FROM photos WHERE id=?',(ident,))
                 result['deleted'].append(ident)
+                from .cleanup import prune_empty
+                directories=[Path(a['path']).parent for a in assets if Path(a['path']).is_relative_to(trash_root)]
+                prune_empty(library.root,directories+[Path(f['path']).parent for f in files]+[trash_root])
             except Exception as e:
                 message=str(e)
                 with catalog.connect() as db:db.execute('UPDATE purges SET error=? WHERE photo_id=?',(message,ident))

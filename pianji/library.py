@@ -160,7 +160,7 @@ class Library:
         manual=photo['manual_person'] if manual is None else manual
         sql.append(('UPDATE photos SET person_id=?,edited=?,manual_person=? WHERE id=?',(person_id,int(edited),int(manual),photo['id'])))
         sql+=extra_sql or []
-        return self.journal.execute('move',changes,sql,{'photo_id':photo['id'],'before':{k:photo[k] for k in ('person_id','edited','manual_person')},'after':{'person_id':person_id,'edited':int(edited),'manual_person':int(manual)}})
+        return self.journal.execute('move',changes,sql,{'photo_id':photo['id'],'before':{k:photo[k] for k in ('person_id','edited','manual_person')},'after':{'person_id':person_id,'edited':int(edited),'manual_person':int(manual)},'cleanup_dirs':[str(Path(a['path']).parent) for a in assets]})
 
     def _fresh_assets(self,photo,allow_missing=False):
         assets=[dict(a) for a in photo['assets']]
@@ -219,7 +219,7 @@ class Library:
                     if table=='assets':sql.append(self._asset_sql({**a,'sha256':sha},str(dst)))
                     else:sql.append(('UPDATE detached_exports SET path=?,sha256=? WHERE id=?',(str(dst),sha,a['id'])))
             sql.append(('INSERT INTO trashed_photos(photo_id,payload) VALUES(?,?)',(photo['id'],json.dumps(locations,ensure_ascii=False))))
-            return self.journal.execute('trash',changes,sql,{'photo_id':photo['id']})
+            return self.journal.execute('trash',changes,sql,{'photo_id':photo['id'],'cleanup_dirs':[str(Path(a['path']).parent) for a in originals+detached]})
         return self._batch(ids,apply,cancel,progress)
 
     def restore_photos(self,ids,cancel=lambda:False,progress=lambda n,t,m:None):
@@ -265,6 +265,9 @@ class Library:
             if not result['errors'] and not result['cancelled']:
                 self.journal.execute('delete_activity',[],[('INSERT INTO deleted_activities(activity_id) VALUES(?)',(activity_id,))])
                 result['deleted_activity']=activity_id
+                from .cleanup import cleanup_library
+                folder=self.catalog.rows('SELECT folder FROM activities WHERE id=?',(activity_id,))[0]['folder']
+                cleanup_library(self,self.root/folder)
             return result
 
     def link_export(self,photo_id,file):
@@ -379,6 +382,9 @@ class Library:
                         ('UPDATE photos SET person_id=? WHERE person_id=?',(target['id'],ident)),
                         ('DELETE FROM people WHERE id=?',(ident,))])
                     result['deleted_people'].append(ident)
+                    from .cleanup import cleanup_library
+                    activity=self.catalog.rows('SELECT folder FROM activities WHERE id=?',(person['activity_id'],))[0]
+                    cleanup_library(self,self.root/activity['folder']/person['folder'])
                 except Exception as e:result['errors'].append({'id':ident,'message':str(e)})
             return result
 

@@ -8,6 +8,7 @@ import {libraryDialog} from './library-manager.js';
 import {setupContextMenu,commandMenu} from './context-menu.js';
 import {bindChoice,choices,syncChoices,clearChoices,folderScope,selectableFolderKeys} from './choice-list.js';
 import {remember,goBack,clearHistory} from './navigation.js';
+import {icon,decorateControls} from './icons.js';
 
 let taskId=null,inspectorRevision=0,proposedSource=null;
 const safe=fn=>(...args)=>Promise.resolve().then(()=>fn(...args)).catch(error);
@@ -25,7 +26,7 @@ async function refresh(){
   }else{state.activities=[];state.people=[];state.photos=[]}
   render();
 }
-function sideButton(label,active,fn,count){const b=button('',safe(fn),'side-item'+(active?' active':''));b.append(el('span','',label));if(count!==undefined)b.append(el('span','count',String(count)));return b}
+function sideButton(label,active,fn,count){const b=button('',safe(fn),'side-item'+(active?' active':''));b.append(icon('folder'),el('span','side-label',label));if(count!==undefined)b.append(el('span','count',String(count)));b.title=label;return b}
 async function openActivity(id){if(state.activity!==id||state.view!=='library'||state.person!=='all'||state.stage!=='all'||state.browse!=='folders')remember();resetLibrarySelection();state.activity=id;state.person='all';state.stage='all';state.browse='folders';state.view='library';await refresh()}
 function openPerson(id){const layout=id==='all'?'folders':'photos';if(state.person!==id||state.view!=='library'||state.browse!==layout||state.stage!=='all')remember();resetLibrarySelection();state.person=id;state.stage='all';state.browse=layout;state.date='all';state.view='library';render()}
 function openLibraryFolder(folder){if(folder.kind==='person')openPerson(folder.person)}
@@ -40,9 +41,9 @@ function render(){
   $('#source-read-label').hidden=!isSD;$('#toggle-browse').hidden=isSD||state.person!=='all';$('#toggle-browse').textContent=state.browse==='folders'?'平铺照片':'人物文件夹';
   $('#stage-tabs').hidden=isSD;$('#people-section').hidden=isSD;$('#import').hidden=!isSD;$('#library-actions').hidden=isSD;
   $('#library-path').textContent=state.settings.library||'尚未选择照片库';$('#choose-library').textContent='管理照片库';$('#format-filter').value=state.format;
-  $('#activities').replaceChildren(...state.activities.map(a=>{const b=sideButton(a.name,a.id===state.activity,()=>openActivity(a.id));b.dataset.activity=a.id;return b}));
+  $('#activities').replaceChildren(...state.activities.map(a=>{const b=sideButton(a.name,a.id===state.activity,()=>openActivity(a.id));b.firstElementChild.replaceWith(icon('calendar'));b.dataset.activity=a.id;return b}));
   $('#people-all').classList.toggle('active',state.person==='all');$('#people-body').hidden=state.peopleCollapsed;$('#people-collapse').textContent=(state.peopleCollapsed?'▸':'▾')+' 人物';$('#people-collapse').setAttribute('aria-expanded',String(!state.peopleCollapsed));
-  $('#people').replaceChildren(...state.people.map(p=>{const b=sideButton(p.name,state.person===p.id,()=>openPerson(p.id),state.photos.filter(row=>row.activity_id===state.activity&&row.person_id===p.id).length);b.dataset.person=p.id;return b}));
+  $('#people').replaceChildren(...state.people.map(p=>{const b=sideButton(p.name,state.person===p.id,()=>openPerson(p.id),state.photos.filter(row=>row.activity_id===state.activity&&row.person_id===p.id).length);b.firstElementChild.replaceWith(icon(p.role==='group'?'users':p.role==='unclassified'?'inbox':'person'));b.dataset.person=p.id;return b}));
   const crumbs=$('#library-breadcrumbs');crumbs.hidden=isSD;crumbs.replaceChildren(button('全部人物',()=>openPerson('all')));if(state.person!=='all'){crumbs.append(el('span','muted','/'),button(state.people.find(p=>p.id===state.person)?.name||'人物',()=>openPerson(state.person)));if(state.stage!=='all')crumbs.append(el('span','muted','/'),el('span','',({pending:'选出原片',edited:'已修原片',exports:'成片'})[state.stage]))}else if(state.browse==='photos')crumbs.append(el('span','small muted','/ 平铺照片'));
   renderFolders();
   document.querySelectorAll('[data-stage]').forEach(b=>b.classList.toggle('active',b.dataset.stage===state.stage));
@@ -50,7 +51,7 @@ function render(){
   const date=$('#date-filter');date.replaceChildren();for(const value of ['all',...dates]){const o=el('option','',value==='all'?'所有日期':value==='unknown'?'拍摄日期未知':value);o.value=value;date.append(o)}if(!dates.includes(state.date))state.date='all';date.value=state.date;
   $('#only-selected').checked=state.onlySelected;
   if(!visible().some(p=>p.id===state.current))state.current=visible().find(p=>selected().has(p.id))?.id||null;
-  renderGallery();renderInspector();
+  renderGallery();renderInspector();decorateControls();$('#library-path').title=state.settings.library||'';
 }
 function chooseFolder(path){if(state.sourceFolder!==path)remember();state.sourceFolder=path;state.date='all';state.onlySelected=false;state.current=null;render()}
 function renderFolders(){
@@ -66,6 +67,7 @@ function renderFolders(){
 async function renderInspector(){
   const box=$('#inspector'),p=current(),rev=++inspectorRevision;
   box.replaceChildren();
+  if(!p)$('#ambient-photo').style.backgroundImage='none';
   if(!p){const empty=el('div','empty');empty.append(el('span','','选择一张照片'),el('small','','单击选择 · 双击查看大图\n拖动可批量选择'));box.append(empty);return}
   const thumb=el('div','large-thumb'),badge=el('span','format-chip',[...new Set(assets(p).filter(a=>a.kind==='jpeg'||a.kind==='raw').map(a=>a.kind==='raw'?'RAW':'JPG'))].join(' + '));badge.setAttribute('aria-label','文件格式 '+badge.textContent);
   const showThumb=im=>thumb.replaceChildren(im,badge);showThumb(el('span','muted small','正在读取…'));thumb.onclick=()=>openViewer(p.id);box.append(thumb,el('div','file-title',p.stem));
@@ -103,7 +105,7 @@ async function renderInspector(){
     box.querySelectorAll('button').forEach(b=>{b.dataset.mutation='true';if(state.busy)b.disabled=true});
   }
   const details=el('details');details.append(el('summary','muted small','文件位置'));for(const a of assets(p))details.append(el('p','path',a.path));box.append(el('div','divider'),details);
-  try{const result=await preview(p,state.view==='library'&&state.stage==='exports'?'export-thumb':'thumb',state.view==='sd'?state.scanId:null);if(rev!==inspectorRevision)return;if(result.url){const im=el('img');im.src=result.url;im.alt=p.stem;showThumb(im);updatePhotoThumbnail(p.id,result.url)}else showThumb(el('span','muted small','无法预览'))}catch{if(rev===inspectorRevision)showThumb(el('span','muted small','无法预览'))}
+  try{const result=await preview(p,state.view==='library'&&state.stage==='exports'?'export-thumb':'thumb',state.view==='sd'?state.scanId:null);if(rev!==inspectorRevision)return;if(result.url){const im=el('img');im.src=result.url;im.alt=p.stem;showThumb(im);if(result.url.startsWith('data:image/'))$('#ambient-photo').style.backgroundImage='url("'+result.url.replaceAll('"','%22')+'")';updatePhotoThumbnail(p.id,result.url)}else showThumb(el('span','muted small','无法预览'))}catch{if(rev===inspectorRevision)showThumb(el('span','muted small','无法预览'))}
 }
 async function start(name,...args){
   if(state.busy)throw new Error('请等待当前任务完成');

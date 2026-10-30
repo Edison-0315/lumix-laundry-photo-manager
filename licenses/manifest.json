@@ -209,6 +209,29 @@
     ]
   },
   {
+    "name": "pywin32",
+    "version": "312",
+    "license": "PSF",
+    "files": [
+      "pywin32\\adodbapi_license.txt",
+      "pywin32\\pythonwin_License.txt",
+      "pywin32\\pythonwin_Scintilla-License.txt",
+      "pywin32\\pywin_idle_LICENSE.txt",
+      "pywin32\\licenses_adodbapi_license.txt",
+      "pywin32\\licenses_com_License.txt",
+      "pywin32\\src_MAPIStubLibrary_LICENSE",
+      "pywin32\\licenses_isapi_README.txt",
+      "pywin32\\licenses_pythonwin_License.txt",
+      "pywin32\\pythonwin_Scintilla_License.txt",
+      "pywin32\\pywin_idle_LICENSE.txt",
+      "pywin32\\licenses_win32_License.txt",
+      "pywin32\\win32_License.txt",
+      "pywin32\\win32com_License.txt",
+      "pywin32\\win32comext_License.txt",
+      "pywin32\\win32comext_mapi_MAPIStubLibrary-License.txt"
+    ]
+  },
+  {
     "name": "pywin32-ctypes",
     "version": "0.2.3",
     "license": "BSD-3-Clause",
@@ -223,6 +246,14 @@
     "files": [
       "rawpy\\rawpy-0.27.1.dist-info_licenses_LICENSE",
       "rawpy\\rawpy-0.27.1.dist-info_licenses_LICENSE.LibRaw"
+    ]
+  },
+  {
+    "name": "Send2Trash",
+    "version": "2.1.0",
+    "license": "BSD-3-Clause",
+    "files": [
+      "Send2Trash\\send2trash-2.1.0.dist-info_licenses_LICENSE"
     ]
   },
   {

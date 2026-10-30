@@ -93,6 +93,25 @@ def run(root):
             assert not reopened_library.catalog.rows('SELECT id FROM photos WHERE id=?',(p['id'],))
             result['checks'].append('packaged permanent deletion removes owned fixture trash only')
             reopened_library.close()
+            assert library.is_relative_to(root) and (root/'_pianji_test_fixture').is_file()
+            deletion=Bridge(root/'delete-config',dialog=lambda kind:str(library))
+            try:
+                check(deletion.choose_library());plan=check(deletion.inspect_library_delete(str(library)))
+                check(deletion.delete_library(plan['token'],library.name));assert not library.exists()
+                import pythoncom
+                from win32com.client import Dispatch
+                pythoncom.CoInitialize()
+                try:
+                    recycled=Dispatch('Shell.Application').Namespace(10)
+                    item=next((item for item in recycled.Items() if str(item.ExtendedProperty('System.Recycle.DeletedFrom'))==str(library.parent) and item.Name==library.name),None)
+                    assert item is not None;item.InvokeVerb('undelete')
+                    for _ in range(200):
+                        if library.exists():break
+                        time.sleep(.05)
+                    assert library.exists()
+                finally:pythoncom.CoUninitialize()
+            finally:deletion._close()
+            result['checks'].append('packaged whole-library recycle and restore operate only on marked fixture')
             after={str(f.relative_to(source)):hashlib.sha256(f.read_bytes()).hexdigest() for f in source.rglob('*') if f.is_file()}
             assert before==after;result['checks'].append('reopen persistence; SD hashes unchanged')
             result['ok']=True;result['photos']=len(photos)

@@ -32,7 +32,7 @@ class Bridge:
         self._settings_file=self._config/'settings.json'
         try: self._settings=json.loads(self._settings_file.read_text(encoding='utf-8'))
         except (FileNotFoundError,ValueError): self._settings={}
-        self._dialog=dialog; self._window=None; self._grants={}; self._scans={};self._library_parents={}
+        self._dialog=dialog; self._window=None; self._grants={}; self._scans={};self._library_parents={};self._library_deletions={}
         self._jobs=JobManager(); self._previews=ThreadPoolExecutor(max_workers=2)
         self._cache=PreviewCache(self._config/'cache'); self._lib=None
         self._model_root=model_root or Path(__file__).resolve().parents[1]/'models'
@@ -153,6 +153,26 @@ class Bridge:
         if self._settings.get('library') and Path(self._settings['library']).resolve()==root:self._settings.pop('library')
         self._persist()
         return True
+
+    @api
+    def inspect_library_delete(self,path):
+        from .library_deletion import inspect
+        return inspect(self,path)
+
+    @api
+    def delete_library(self,token,name):
+        from .library_deletion import execute
+        return execute(self,token,name)
+
+    @api
+    def cleanup_empty_folders(self,path):
+        from .cleanup import cleanup_library
+        from .library_deletion import _root
+        self._check_switch();root=_root(self,path)
+        if self._lib and self._lib.root==root:return cleanup_library(self._lib)
+        library=Library(root)
+        try:return cleanup_library(library)
+        finally:library.close()
 
     @api
     def get_settings(self):

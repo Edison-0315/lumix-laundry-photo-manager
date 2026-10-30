@@ -1,0 +1,47 @@
+/* Dark photographic workspace. Glass belongs to chrome, never to photo pixels. */
+:root{--bg:#151618;--panel:#202124;--raised:#333438;--line:#ffffff19;--text:#f4f4f6;--muted:#b5b6be;--accent:#e9c084;--glass:rgba(35,36,40,.76);--glass-strong:rgba(36,37,41,.94);--radius:18px}
+body{font-family:'Segoe UI Variable','Segoe UI','Microsoft YaHei UI',sans-serif;background:#161719;font-size:14px}
+#ambient-photo{position:fixed;inset:-80px;background-position:center;background-size:cover;filter:blur(80px) saturate(.65);opacity:.15;pointer-events:none;z-index:-1;contain:strict}
+.appbar{background:rgba(31,32,35,.74);backdrop-filter:blur(24px);border-bottom-color:#ffffff0d;padding:0 22px;gap:22px}
+.brand{font-size:17px;letter-spacing:.01em;font-weight:600}.brandmark{width:58px;height:28px}.appbar #context{font-size:12px;color:var(--muted)}
+.shell{padding:12px;gap:12px;grid-template-columns:194px minmax(390px,1fr) 292px}
+.sidebar,.inspector{border:1px solid #ffffff16;border-radius:var(--radius);background:var(--glass);backdrop-filter:blur(26px) saturate(1.1)}
+.sidebar{padding:16px 10px}.inspector{padding:18px}.sidebar section{border-top-color:#ffffff13;margin-top:18px;padding-top:14px}
+main{border-radius:var(--radius);overflow:hidden;background:rgba(21,22,25,.82);border:1px solid #ffffff0b}
+button{border-radius:10px;min-height:38px;transition:background-color 120ms ease,border-color 120ms ease,color 120ms ease}
+button:active:not(:disabled){background-color:#ffffff14}.outline{border-color:#ffffff23;background:#ffffff03}.outline:hover{background:#ffffff0b;border-color:#ffffff36}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.ui-icon{width:18px;height:18px;flex:none;vertical-align:middle;pointer-events:none}.icon-button{border-radius:14px}.nav{gap:10px;font-size:14px;padding:10px 12px;border-radius:11px}
+.nav.active,.side-item.active{background:#ffffff12;color:#f6eee1}.side-item{gap:9px;border-radius:9px;padding:8px 10px;justify-content:flex-start;min-height:37px;font-size:13px}
+.side-item .ui-icon{width:16px;height:16px;color:#c8c6c1}.side-item .side-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.side-item .count{margin-left:auto}
+.section-label,.section-head #people-collapse{font-size:12px;font-weight:600;color:#b4b5bd}.section-head button{border-radius:8px;min-height:32px;min-width:32px}
+#people-all{gap:9px}.sidebar-bottom{padding-top:18px;gap:9px}#library-path{font-size:11px;line-height:1.5;max-height:34px;overflow:hidden;color:#a5a6af}
+#choose-library{font-size:12px;padding:8px 10px}.trash-nav{border-radius:12px;background:#be4b4b14;border-color:#e2858540;color:#ffb9b9;font-size:13px;min-height:42px}
+.pagehead{padding:21px 20px 18px;gap:10px}h1{font-size:23px;font-weight:600;letter-spacing:-.025em}.pagehead p{line-height:1.5}.pagehead #back{min-width:38px;padding:8px;font-size:12px}
+.pagehead #back .ui-icon{width:16px;height:16px}.pagehead #choose-source,.pagehead #classify,.pagehead #toggle-browse{font-size:12px;gap:7px}
+.tabs{padding:0 20px;gap:22px}.tabs button{font-size:13px;border-radius:0;color:#b8b9c0}.tabs button.active{color:#f7f1e5;border-color:#d7b77f}
+.toolbar{padding:12px 18px;gap:10px;min-height:60px}.toolbar label{font-size:12px}.toolbar button{min-height:32px;font-size:12px;gap:6px}.toolbar .ui-icon{width:16px;height:16px}
+input,select{border-color:#ffffff22;border-radius:9px;background:rgba(18,19,22,.5);padding:9px;color:#f4f4f6}.toolbar select{max-width:135px}.thumbnail-control input{width:80px}.thumbnail-control button{border-radius:8px}
+.breadcrumbs{border-color:#ffffff0c;padding:0 18px;font-size:12px}.breadcrumbs button{font-size:12px;min-height:30px;gap:6px}
+#gallery{padding:6px 18px 22px;gap:14px;scrollbar-gutter:stable}.photo{border-radius:12px;padding:6px;background:#24252990}.photo:hover{background:#34353b90}.photo.checked{background:#493c298c;border-color:#ddbd83}
+.picture{border-radius:8px;background:#101113}.photo .name{font-size:12px;margin-top:9px}.photo .meta{font-size:11px;padding-bottom:5px}.photo .badge{top:12px;left:12px;border-radius:5px;background:#202126a6;backdrop-filter:blur(10px);padding:3px 6px;font-size:10px}.pick{border-radius:6px;top:12px;right:12px}
+.primary{border-radius:11px;background:#e6c18b;color:#282119;box-shadow:none}.primary:hover{background:#f0cf9f}
+footer{border-top-color:#ffffff13;background:rgba(35,36,40,.74);backdrop-filter:blur(20px);padding:12px 18px;gap:12px;font-size:12px}footer button{font-size:12px}
+.inspector .large-thumb{border-radius:12px;background:#111214;margin-bottom:17px}.format-chip{border-radius:9px;background:#3032398f;backdrop-filter:blur(14px);border-color:#ffffff3b}
+.inspector .file-title{font-size:16px}.inspector dl{font-size:12px;gap:11px 10px;grid-template-columns:65px minmax(0,1fr)}.inspector dt{color:#afb0ba}.inspector dd{color:#efeff2}
+.format-options button{border-radius:9px;background:#ffffff03}.export-version{border-radius:10px;background:#ffffff03;padding:10px}.inspector h3{font-size:13px}.inspector .divider{border-color:#ffffff15}
+.folder-card{border-radius:14px;background:#27282b80;border-color:#ffffff12;padding:15px;gap:7px}.folder-card:hover{background:#35363a90}.folder-card.checked{background:#493c295f;border-color:#ddbd83;outline:none}
+.folder-art{border:0;background:#d7b57912;border-radius:12px;padding:8px;height:135px;margin:7px 0}.folder-art:before{top:-6px;left:8px;height:8px;width:40%;border:0;border-radius:5px 5px 0 0;background:#bfa36b3b}
+.folder-art>.folder-icon{width:66px;height:66px;color:#c7ad78;stroke-width:1}.folder-samples{gap:4px}.folder-samples .folder-sample{border-radius:6px;border-color:#ffffff1d;box-shadow:0 2px 8px #0002}.folder-card strong{font-size:14px;font-weight:600}
+.empty .empty-icon svg{width:48px;height:48px;stroke-width:1;color:#858993}.empty span{font-size:16px}.empty small{max-width:330px;font-size:12px;color:#aaadb7}
+dialog{border-radius:22px;background:rgba(39,40,45,.92);border:1px solid #ffffff29;backdrop-filter:blur(32px) saturate(1.15);box-shadow:0 24px 80px #0007;padding:28px;max-height:calc(100vh - 48px);overflow:auto}
+dialog::backdrop{background:#07080b9e;backdrop-filter:blur(5px)}dialog h2{font-size:20px;letter-spacing:-.02em}dialog p{line-height:1.6;color:#c0c1c9}dialog label{font-size:13px}dialog .buttons{margin-top:24px;gap:9px}
+.notice{border-radius:12px;background:#14151862;border-color:#ffffff17;color:#c2c3cb;font-size:12px;line-height:1.6;padding:14px}.manager-actions{gap:10px}.library-row{flex-wrap:wrap;gap:8px;border-color:#ffffff17;padding:17px 0}.library-row>div{flex-basis:100%}.library-row button{min-height:34px;font-size:12px;gap:6px}.library-row .path{max-height:none;font-size:12px}
+#modal:has(.manager-actions){width:650px}.trash-list .library-row{flex-wrap:nowrap}.trash-choice{border-radius:10px;padding:12px}.destructive{border-radius:10px;background:#ad4a47!important}
+.context-menu{border-radius:14px;background:rgba(44,45,50,.95);backdrop-filter:blur(28px);border-color:#ffffff2a;box-shadow:0 15px 45px #0006;padding:6px}.context-menu button{border-radius:8px;gap:10px;font-size:13px}.context-menu .ui-icon{width:17px;height:17px;color:currentColor}.menu-heading{border-bottom-color:#ffffff1b;padding:8px 12px;color:#c5c5ce}
+#taskbar{border-radius:16px;background:#303138e8;backdrop-filter:blur(20px);border-color:#ffffff2a}#toast{border-radius:12px;font-size:13px;background:#e6c18bf2;backdrop-filter:blur(14px)}
+#viewer{border-radius:18px;background:#101113}.viewer-toolbar{background:#26272bde;backdrop-filter:blur(20px);padding:10px}.viewer-toolbar button{border-radius:9px}
+@media(max-width:1150px){.shell{grid-template-columns:160px minmax(390px,1fr) 240px;gap:9px;padding:9px}.sidebar{padding:12px 7px}.inspector{padding:13px}.pagehead{padding:18px 14px;gap:8px}.toolbar{padding:9px 12px;gap:7px}.toolbar select{max-width:120px}#gallery{padding-left:12px;padding-right:12px}.side-item{padding:8px}.side-item .ui-icon{width:15px}.thumbnail-control input{width:64px}.appbar{gap:16px}.brand{font-size:16px}.brandmark{width:52px}}
+@media(prefers-reduced-motion:reduce){button{transition:none}#ambient-photo{background-image:none!important}}
+@media(prefers-reduced-transparency:reduce){.appbar,.sidebar,.inspector,footer,.context-menu,dialog{background:#26272b;backdrop-filter:none}#ambient-photo{display:none}}
+::-webkit-scrollbar{width:7px;height:7px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#b8bbc34d;border:2px solid transparent;background-clip:padding-box;border-radius:12px}::-webkit-scrollbar-thumb:hover{background-color:#d1d3db70}.inspector .empty small{white-space:pre-line}

@@ -1,6 +1,7 @@
 import {state,$,selected,visible,current,assets,el,button,error,childFolders,libraryFolderMode,libraryFolders,sourceDirs} from './store.js';
 import {bindChoice,choices,folderScope,syncChoices} from './choice-list.js';
 import {api} from './api.js';
+import {icon,decorateButton} from './icons.js';
 import {preview} from './previews.js';
 let inspectorHook=()=>{},folderHook=()=>{},observer,queue=[],active=0,revision=0,cards=new Map(),drawn=new Set(),beforeClick=null,filterTimer;
 export function onInspector(fn){inspectorHook=fn}
@@ -65,13 +66,13 @@ export function renderGallery(){
     if(state.onlySelected&&!choices(folderScope()).has(folder.key))continue;
     const b=button('',()=>{},'folder-card '+(folder.kind==='person'?'person-folder':folder.kind==='stage'?'stage-folder':''));
     if(folder.person)b.dataset.person=folder.person;if(folder.stage)b.dataset.stage=folder.stage;
-    const art=el('div','folder-art');art.append(el('span','folder-icon','▱'));
+    const art=el('div','folder-art'),folderIcon=icon('folder');folderIcon.classList.add('folder-icon');art.append(folderIcon);
     if(folder.examples?.length){const samples=el('div','folder-samples');for(const photo of folder.examples){const slot=el('div','folder-sample');samples.append(slot);targets.set(slot,photo)}art.append(samples)}
     b.append(art,el('strong','',folder.label),el('span','small muted',folder.count===undefined?'双击进入':folder.count+' 张照片 · 双击进入'));
     b.setAttribute('aria-label',folder.label);bindChoice(b,folderScope(),folder.key,()=>folderHook(folder),syncSelection);grid.append(b);
   }
   if(!rows.length&&!folders.length){
-    const empty=el('div','empty');empty.append(el('div','empty-icon','▧'),el('span','',state.view==='sd'?(state.source?'没有符合条件的照片':'从SD卡开始选片'):(state.settings.library_available?'当前筛选下没有照片':'先选择照片库')),
+    const empty=el('div','empty'),emptyIcon=el('div','empty-icon');emptyIcon.append(icon('image'));empty.append(emptyIcon,el('span','',state.view==='sd'?(state.source?'没有符合条件的照片':'从SD卡开始选片'):(state.settings.library_available?'当前筛选下没有照片':'先选择照片库')),
       el('small','',state.view==='sd'?'选择来源后，单击选中、双击查看，拖动可批量选择':'导入的照片将在这里按活动、人物与修图阶段整理'));grid.append(empty);
   }
   for(const p of rows){

@@ -58,6 +58,7 @@ def test_restore_collision_and_missing_files(fixture):
     src,lib=fixture;lib.import_groups(scan_source(src),'event');p=lib.catalog.photos()[0]
     missing=next(a for a in p['assets'] if a['kind']=='raw');Path(missing['path']).unlink()
     jpeg=next(a for a in p['assets'] if a['kind']=='jpeg');assert not lib.trash_photos([p['id']])['errors']
+    Path(jpeg['path']).parent.mkdir(parents=True,exist_ok=True)
     Path(jpeg['path']).write_bytes(b'foreign')
     assert not lib.restore_photos([p['id']])['errors']
     restored=lib.catalog.photo(p['id']);assert Path(jpeg['path']).read_bytes()==b'foreign'

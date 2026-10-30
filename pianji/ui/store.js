@@ -1,3 +1,4 @@
+import {decorateButton} from './icons.js';
 export const state={view:'sd',source:null,sourceFolder:'',format:'all',scanId:null,sourcePhotos:[],photos:[],activities:[],people:[],activity:null,person:'all',stage:'all',date:'all',onlySelected:false,selected:{sd:new Set(),library:new Set()},anchor:{sd:null,library:null},current:null,thumbSize:240,settings:{},busy:false,psFormat:'raw',lastOperation:null};
 export const $=s=>document.querySelector(s);
 state.browse='folders';state.peopleCollapsed=false;state.readFormat='both';
@@ -18,7 +19,7 @@ export function resetLibrarySelection(){state.selected.library.clear();state.anc
 export function current(){return visible().find(p=>p.id===state.current)}
 export function assets(p){return p.assets||p.files||[]}
 export function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
-export function button(text,fn,cls=''){const b=el('button',cls,text);b.type='button';b.addEventListener('click',fn);return b}
+export function button(text,fn,cls=''){const b=el('button',cls,text);b.type='button';b.addEventListener('click',fn);decorateButton(b);return b}
 let timer;
 export function toast(message){$('#toast').textContent=message;$('#toast').hidden=false;clearTimeout(timer);timer=setTimeout(()=>$('#toast').hidden=true,4500)}
 export function error(e){toast(e.message||String(e))}

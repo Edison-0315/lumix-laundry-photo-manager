@@ -11,6 +11,7 @@ def test_packaged_manifest():
     resources=root/'_internal'
     assert (resources/'pianji/ui/index.html').is_file()
     assert (resources/'pianji/ui/lumix.ico').is_file()
+    assert (resources/'pianji/ui/glass.css').is_file() and (resources/'pianji/ui/icons.js').is_file()
     assert (resources/'THIRD-PARTY-NOTICES.md').is_file()
     assert (resources/'licenses').is_dir()
     manifest=json.loads((resources/'models/manifest.json').read_text(encoding='utf-8'))

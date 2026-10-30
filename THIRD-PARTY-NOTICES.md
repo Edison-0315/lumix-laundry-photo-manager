@@ -1,6 +1,6 @@
 # Third-party notices
 
-片集使用Python、pywebview、pythonnet、Pillow、NumPy、OpenCV、rawpy/LibRaw、ExifRead及其依赖。构建时将安装的发行包许可证复制到`licenses/`；完整安装版本记录在`requirements-lock.txt`。
+洗衣机管理器使用Python、pywebview、pythonnet、Pillow、NumPy、OpenCV、rawpy/LibRaw、ExifRead、Send2Trash、pywin32及其依赖。构建时将安装的发行包许可证复制到`licenses/`；完整安装版本记录在`requirements-lock.txt`。
 
 - Python: Python Software Foundation License, https://www.python.org/psf/license/
 - pywebview: BSD-3-Clause, https://github.com/r0x0r/pywebview
@@ -10,6 +10,8 @@
 - OpenCV: Apache-2.0 and third-party notices, https://github.com/opencv/opencv
 - rawpy: MIT wrapper; LibRaw: LGPL-2.1 or CDDL-1.0, https://github.com/letmaik/rawpy and https://www.libraw.org/download
 - ExifRead: BSD-3-Clause, https://github.com/ianare/exif-py
+- Send2Trash: BSD-3-Clause, https://github.com/arsenetar/send2trash
+- pywin32: Mark Hammond license and included component licenses, https://github.com/mhammond/pywin32
 - PyInstaller: GPL-2.0 with bootloader exception allowing distribution of generated applications, https://pyinstaller.org/en/stable/license.html
 
 YuNet/SFace model files come from opencv/opencv_zoo at fixed commit `48b10fa505aeb51fbd127fc60a5c660040e823b7`. Each model's source URL, SHA-256 and adjacent license are included in`models/manifest.json`. YuNet's directory uses MIT; SFace's directory uses Apache-2.0. See the included original license text. Model thresholds are conservative initial engineering settings and imply no guaranteed recognition accuracy.
