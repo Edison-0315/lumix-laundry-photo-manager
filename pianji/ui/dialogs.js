@@ -26,15 +26,29 @@ export async function settingsDialog(refresh){
 }
 export async function importDialog(start,refresh){
   if(!state.settings.library_available){
-    const choice=await api('choose_library');if(!choice)return;
-    await refresh();
+    const {libraryDialog}=await import('./library-manager.js');
+    if(!await libraryDialog(refresh))return;
   }
   const ids=[...state.selected.sd];if(!ids.length)return;
   const m=modal('导入所选照片');const name=field(m.content,'活动名称',state.activities.find(a=>a.id===state.activity)?.name||new Date().toLocaleDateString('sv-SE')+'_漫展');
   const list=el('datalist');list.id='activity-names';state.activities.forEach(a=>{const o=el('option');o.value=a.name;list.append(o)});m.content.append(list);name.setAttribute('list','activity-names');
   const label=el('label','','导入格式'),select=el('select');for(const [value,text]of[['both','JPEG 和 RAW'],['jpeg','仅 JPEG'],['raw','仅 RAW']]){const o=el('option','',text);o.value=value;select.append(o)}label.append(select);m.content.append(label);
+  select.value=state.format==='all'?'both':state.format;
   const summary=el('div','notice');const update=()=>{const groups=state.sourcePhotos.filter(p=>ids.includes(p.id)),files=groups.flatMap(assets).filter(a=>select.value==='both'||a.kind===select.value||select.value==='raw'&&a.kind==='xmp');summary.textContent=`已选 ${ids.length} 张照片，预计 ${files.length} 个文件。\n目标：${state.settings.library}\\${name.value}\\待分类\\选出原片\n从来源复制，源文件保留；导入后可识别人脸。`};name.oninput=update;select.onchange=update;update();m.content.append(summary);
   m.submit('开始导入',()=>start('import_selected',state.scanId,ids,name.value,select.value));
+}
+export function deleteDialog(ids,start){
+  if(!ids.length)return;
+  const rows=state.photos.filter(p=>ids.includes(p.id)),count=rows.flatMap(assets).length;
+  confirmAction('删除照片',`将所选 ${ids.length} 张照片（${count} 个已关联文件，以及同组保留版本）移到当前照片库的回收站。JPEG、RAW、XMP 和成片一起移入，可从左侧“回收站”恢复；仍占用磁盘空间。SD 卡上的来源照片保留。`,()=>start('trash_photos',ids));
+}
+export async function trashDialog(start){
+  const rows=await api('list_photos',{trashed:true}),m=modal('回收站');
+  m.content.append(el('p','',`${rows.length} 张照片 · 仅当前照片库。回收站仍占用磁盘空间，恢复后回到原活动和人物。`));
+  const list=el('div','trash-list');
+  for(const p of rows){const row=el('div','library-row'),info=el('div');info.append(el('strong','',p.stem),el('div','small muted',(state.activities.find(a=>a.id===p.activity_id)?.name||'活动')+' · '+assets(p).length+' 个关联文件'+(p.missing?' · 部分文件缺失':'')));row.append(info,button('恢复',async()=>{try{await start('restore_photos',[p.id])}catch(e){m.err.textContent=e.message}},'outline'));list.append(row)}
+  m.content.append(list);m.buttons.replaceChildren(button('关闭',()=>m.dialog.close()));
+  if(rows.length)m.submit('恢复全部',()=>start('restore_photos',rows.map(p=>p.id)));
 }
 export function assignDialog(ids,start,refresh){
   const m=modal('调整人物');m.content.append(el('p','',`将 ${ids.length} 张照片及关联文件整理到所选人物文件夹。`));

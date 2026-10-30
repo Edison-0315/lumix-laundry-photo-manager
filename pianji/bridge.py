@@ -13,6 +13,7 @@ from .library import Library
 from .previews import PreviewCache
 from .jobs import JobManager
 from .photoshop import validate_executable,open_in_photoshop
+from .paths import safe_name,inside
 
 class PathNotGranted(ValueError): pass
 
@@ -31,7 +32,7 @@ class Bridge:
         self._settings_file=self._config/'settings.json'
         try: self._settings=json.loads(self._settings_file.read_text(encoding='utf-8'))
         except (FileNotFoundError,ValueError): self._settings={}
-        self._dialog=dialog; self._window=None; self._grants={}; self._scans={}
+        self._dialog=dialog; self._window=None; self._grants={}; self._scans={};self._library_parents={}
         self._jobs=JobManager(); self._previews=ThreadPoolExecutor(max_workers=2)
         self._cache=PreviewCache(self._config/'cache'); self._lib=None
         self._model_root=model_root or Path(__file__).resolve().parents[1]/'models'
@@ -47,7 +48,7 @@ class Bridge:
         if self._dialog: return self._dialog(kind)
         if not self._window: raise ValueError('桌面窗口尚未就绪')
         import webview
-        dialog_type=webview.FileDialog.FOLDER if kind in ('source','library') else webview.FileDialog.OPEN
+        dialog_type=webview.FileDialog.FOLDER if kind in ('source','library','library_parent') else webview.FileDialog.OPEN
         types=('程序 (*.exe)',) if kind=='photoshop' else ('图片 (*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.webp)',) if kind=='export' else ()
         result=self._window.create_file_dialog(dialog_type,allow_multiple=False,file_types=types)
         return result[0] if result else None
@@ -77,22 +78,80 @@ class Bridge:
             groups=scan_source(root,cancel,progress)
             if cancel():return {'cancelled':True}
             scan_id=uid(); self._scans[scan_id]={g.id:g for g in groups}
-            return {'scan_id':scan_id,'photos':[{**asdict(g),'relative_dir':Path(g.source_dir).relative_to(root).as_posix() if Path(g.source_dir)!=root else ''} for g in groups],'cancelled':False}
+            def relative(path):
+                p=Path(path).relative_to(root);return '' if p==Path('.') else p.as_posix()
+            return {'scan_id':scan_id,'photos':[{**asdict(g),'relative_dir':relative(g.source_dir),'relative_dirs':sorted({relative(Path(a.path).parent) for a in g.files})} for g in groups],'cancelled':False}
         return self._submit('扫描照片',work)
 
     @api
     def choose_library(self):
-        if any(s.status in ('running','queued','cancelling') for s in self._jobs._tasks.values()): raise ValueError('请等待当前任务完成后切换照片库')
+        self._check_switch()
         path=self._pick('library')
         if not path: return None
-        root=Path(path).resolve()
+        return self._switch_library(Path(path).resolve())
+
+    def _check_switch(self):
+        if any(s.status in ('running','queued','cancelling') for s in self._jobs._tasks.values()):raise ValueError('请等待当前任务完成后切换照片库')
+
+    def _check_library_root(self,root):
         if any(root.is_relative_to(source) or source.is_relative_to(root) for source in self._grants.values()): raise ValueError('来源和照片库须使用互不包含的文件夹')
+        paths=self._settings.get('recent_libraries',[])+([self._settings['library']] if self._settings.get('library') else [])
+        if any(root!=Path(p).resolve() and (root.is_relative_to(Path(p).resolve()) or Path(p).resolve().is_relative_to(root)) for p in paths):raise ValueError('照片库之间须使用互不包含的文件夹，请选择其他保存位置')
+
+    def _switch_library(self,root):
+        self._check_switch();self._check_library_root(root)
         if not self._lib or self._lib.root!=root:
             new_library=Library(root)
             if self._lib:self._lib.close()
             self._lib=new_library
-        self._settings['library']=str(root); self._persist()
+        prior=self._settings.get('recent_libraries',[])
+        if self._settings.get('library'):prior=[self._settings['library'],*prior]
+        seen={str(root).casefold()};recent=[str(root)]
+        for path in prior:
+            key=str(Path(path).resolve()).casefold()
+            if key not in seen:seen.add(key);recent.append(str(Path(path).resolve()))
+        self._settings['library']=str(root);self._settings['recent_libraries']=recent;self._persist()
         return {'path':str(root),'recovery':self._lib.recovery}
+
+    @api
+    def choose_library_parent(self):
+        self._check_switch();path=self._pick('library_parent')
+        if not path:return None
+        root=Path(path).resolve()
+        if not root.is_dir():raise ValueError('保存位置不存在')
+        token=uid();self._library_parents[token]=root
+        return {'token':token,'path':str(root)}
+
+    @api
+    def create_library(self,parent_token,name):
+        self._check_switch();safe_name(name)
+        if parent_token not in self._library_parents:raise PathNotGranted('请先选择照片库的保存位置')
+        root=inside(self._library_parents[parent_token],self._library_parents[parent_token]/name)
+        self._check_library_root(root)
+        # Exclusive creation prevents adopting or overwriting an existing folder.
+        root.mkdir(exist_ok=False)
+        return self._switch_library(root)
+
+    @api
+    def list_libraries(self):
+        paths=list(dict.fromkeys(([self._settings['library']] if self._settings.get('library') else [])+self._settings.get('recent_libraries',[])))
+        return [{'path':p,'name':Path(p).name,'available':(Path(p)/'.片集'/'catalog.sqlite3').is_file(),'current':bool(self._lib and self._lib.root==Path(p).resolve())} for p in paths]
+
+    @api
+    def open_library(self,path):
+        root=Path(path).resolve();known=self.list_libraries()['data']
+        if not any(Path(p['path']).resolve()==root for p in known):raise PathNotGranted('请通过文件夹选择窗口打开其他照片库')
+        if not (root/'.片集'/'catalog.sqlite3').is_file():raise ValueError('照片库不可用，请连接磁盘或重新选择位置')
+        return self._switch_library(root)
+
+    @api
+    def remove_recent_library(self,path):
+        root=Path(path).resolve()
+        if self._lib and self._lib.root==root:raise ValueError('当前照片库不能从最近记录移除，请先切换')
+        self._settings['recent_libraries']=[p for p in self._settings.get('recent_libraries',[]) if Path(p).resolve()!=root]
+        if self._settings.get('library') and Path(self._settings['library']).resolve()==root:self._settings.pop('library')
+        self._persist()
+        return True
 
     @api
     def get_settings(self):
@@ -119,9 +178,17 @@ class Bridge:
 
     @api
     def list_photos(self,filters):
-        lib=self._library(); photos=lib.catalog.photos(filters.get('activity_id'))
+        lib=self._library(); photos=lib.catalog.photos(filters.get('activity_id'),trashed=bool(filters.get('trashed')))
         for p in photos: p['missing']=any(not Path(a['path']).is_file() for a in p['assets'])
         return photos
+
+    @api
+    def trash_photos(self,photo_ids):
+        lib=self._library();return self._submit('移到回收站',lambda c,p:lib.trash_photos(photo_ids,c,p))
+
+    @api
+    def restore_photos(self,photo_ids):
+        lib=self._library();return self._submit('恢复照片',lambda c,p:lib.restore_photos(photo_ids,c,p))
 
     @api
     def get_preview(self,photo_id,kind='thumb',scan_id=None):
@@ -136,6 +203,7 @@ class Bridge:
                 # Keep the snapshot paths and their file handles under one read
                 # lease. Journal writers wait, while other previews run in parallel.
                 with lib.journal.access.read():
+                    lib._ready()
                     group=lib.group(photo_id,prefer_export=kind in ('export','export-thumb'))
                     return self._cache.get(group,640 if kind in ('thumb','export-thumb') else 4096)
         result=self._previews.submit(read).result()
@@ -196,6 +264,7 @@ class Bridge:
     def set_export_cover(self,photo_id,asset_id):
         lib=self._library()
         with lib.lock:
+            lib._ready();lib.catalog.photo(photo_id)
             if not any(a['id']==asset_id and a['kind']=='export' for a in lib.catalog.assets(photo_id)): raise ValueError('成片不存在')
             with lib.catalog.connect() as db: db.execute('UPDATE photos SET primary_export_id=? WHERE id=?',(asset_id,photo_id))
         return True

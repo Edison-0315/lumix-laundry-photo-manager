@@ -29,3 +29,18 @@ def test_cancel_stops_metadata_reads_between_files(tmp_path):
     processed=[]
     scan_source(tmp_path,cancel=lambda:len(processed)>=1,progress=lambda n,t,m:processed.append(n) if n>0 else None)
     assert processed==[1]
+
+def test_format_subfolders_pair_but_remain_readable_independently(tmp_path):
+    jpg(tmp_path/'DCIM'/'JPEG'/'A.JPG')
+    raw=tmp_path/'DCIM'/'RAW';raw.mkdir();(raw/'a.RW2').write_bytes(b'raw');(raw/'a.xmp').write_text('xmp')
+    groups=scan_source(tmp_path)
+    assert len(groups)==1
+    assert {a.kind for a in groups[0].files}=={'jpeg','raw','xmp'}
+    assert len(scan_source(raw))==1 and {a.kind for a in scan_source(raw)[0].files}=={'raw','xmp'}
+    assert {a.kind for a in scan_source(tmp_path/'DCIM'/'JPEG')[0].files}=={'jpeg'}
+
+def test_unrelated_or_ambiguous_split_names_are_not_paired(tmp_path):
+    jpg(tmp_path/'first'/'A.JPG');(tmp_path/'second').mkdir();(tmp_path/'second'/'A.RW2').write_bytes(b'raw')
+    assert len(scan_source(tmp_path))==2
+    jpg(tmp_path/'JPEG'/'B.jpg');jpg(tmp_path/'JPG'/'B.jpg');(tmp_path/'RAW').mkdir();(tmp_path/'RAW'/'B.rw2').write_bytes(b'raw')
+    assert len(scan_source(tmp_path))==5

@@ -21,6 +21,7 @@ class Catalog:
             CREATE TABLE IF NOT EXISTS operations(id TEXT PRIMARY KEY,kind TEXT NOT NULL,phase TEXT NOT NULL,payload TEXT NOT NULL,error TEXT);
             CREATE TABLE IF NOT EXISTS detached_exports(id TEXT PRIMARY KEY,photo_id TEXT NOT NULL,path TEXT UNIQUE NOT NULL,sha256 TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS import_members(activity_id TEXT NOT NULL,kind TEXT NOT NULL,sha256 TEXT NOT NULL,photo_id TEXT NOT NULL,PRIMARY KEY(activity_id,kind,sha256,photo_id));
+            CREATE TABLE IF NOT EXISTS trashed_photos(photo_id TEXT PRIMARY KEY,payload TEXT NOT NULL,deleted_at TEXT DEFAULT CURRENT_TIMESTAMP);
             INSERT OR IGNORE INTO import_members SELECT p.activity_id,a.kind,a.sha256,p.id FROM assets a JOIN photos p ON p.id=a.photo_id WHERE a.kind IN ('jpeg','raw');
             ''')
 
@@ -63,16 +64,17 @@ class Catalog:
         if not rows: raise ValueError('人物不存在')
         return rows[0]
 
-    def photos(self,activity_id=None):
-        sql='SELECT * FROM photos'; args=()
-        if activity_id: sql+=' WHERE activity_id=?'; args=(activity_id,)
+    def photos(self,activity_id=None,trashed=False):
+        sql='SELECT * FROM photos WHERE '+('' if trashed else 'NOT ')+'EXISTS(SELECT 1 FROM trashed_photos t WHERE t.photo_id=photos.id)'; args=()
+        if activity_id: sql+=' AND activity_id=?'; args=(activity_id,)
         rows=self.rows(sql+' ORDER BY captured_at, rowid',args)
         for p in rows: p['assets']=self.assets(p['id'])
         return rows
 
-    def photo(self,ident):
+    def photo(self,ident,include_trashed=False):
         rows=self.rows('SELECT * FROM photos WHERE id=?',(ident,))
         if not rows: raise ValueError('照片不存在')
+        if not include_trashed and self.rows('SELECT photo_id FROM trashed_photos WHERE photo_id=?',(ident,)):raise ValueError('照片在回收站中，请先恢复')
         p=rows[0]; p['assets']=self.assets(ident); return p
 
     def assets(self,photo_id): return self.rows('SELECT * FROM assets WHERE photo_id=? ORDER BY rowid',(photo_id,))

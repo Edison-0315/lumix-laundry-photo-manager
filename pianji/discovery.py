@@ -28,6 +28,23 @@ def scan_source(root,cancel=lambda:False,progress=lambda n,t,m:None):
             ident=hashlib.sha256(('\0'.join(key)).encode()).hexdigest()[:32]
             row=paired.setdefault(key,PhotoGroup(ident,str(p.parent),stem,None,[]))
             row.files.append(FileAsset(hashlib.sha256(str(p).encode()).hexdigest()[:32],ident,kind,str(p)))
+    # Only pair explicit sibling format folders. A basename alone is unsafe
+    # across separate shoots; multiple candidates stay separate for review.
+    siblings={}
+    for g in paired.values():
+        parent=Path(g.source_dir)
+        kinds={a.kind for a in g.files if a.kind!='xmp'}
+        expected='jpeg' if parent.name.casefold() in ('jpeg','jpg') else 'raw' if parent.name.casefold() in ('raw','rw2') else None
+        if expected and kinds=={expected}:
+            siblings.setdefault((str(parent.parent).casefold(),g.stem.casefold()),[]).append(g)
+    for candidates in siblings.values():
+        if len(candidates)!=2:continue
+        if {a.kind for g in candidates for a in g.files if a.kind!='xmp'}!={'jpeg','raw'}:continue
+        if any(sum(a.kind!='xmp' for a in g.files)!=1 for g in candidates):continue
+        first,second=candidates
+        first.files.extend(second.files)
+        for a in first.files:a.photo_id=first.id
+        paired={key:g for key,g in paired.items() if g is not second}
     return _groups(paired,progress,cancel)
 
 def _groups(paired,progress,cancel=lambda:False):

@@ -1,9 +1,11 @@
 import {ready,api} from './api.js';
-import {state,$,selected,basePhotos,visible,current,assets,el,button,toast,error,folderPaths,resetLibrarySelection} from './store.js';
+import {state,$,selected,basePhotos,visible,current,assets,el,button,toast,error,folderPaths,sourceDirs,resetLibrarySelection} from './store.js';
 import {renderGallery,syncSelection,setThumbnailSize,onInspector,onFolder,openViewer,setupViewer,updatePhotoThumbnail} from './gallery.js';
 import {preview,invalidateLibraryPreviews} from './previews.js';
 import {setupSelection} from './selection.js';
-import {settingsDialog,importDialog,assignDialog,newPersonDialog,managePeopleDialog,confirmAction,resultDialog} from './dialogs.js';
+import {settingsDialog,importDialog,assignDialog,newPersonDialog,managePeopleDialog,confirmAction,resultDialog,deleteDialog,trashDialog} from './dialogs.js';
+import {libraryDialog} from './library-manager.js';
+import {setupContextMenu} from './context-menu.js';
 
 let taskId=null,inspectorRevision=0,proposedSource=null;
 const safe=fn=>(...args)=>Promise.resolve().then(()=>fn(...args)).catch(error);
@@ -30,7 +32,7 @@ function render(){
   $('#context').textContent=isSD?'浏览来源 · 选择后导入':'照片库 · '+(state.people.find(p=>p.id===state.person)?.name||'全部人物');
   $('#choose-source').hidden=!isSD;$('#classify').hidden=isSD;$('#classify').disabled=!state.activity||state.busy;
   $('#stage-tabs').hidden=isSD;$('#people-section').hidden=isSD;$('#import').hidden=!isSD;$('#library-actions').hidden=isSD;
-  $('#library-path').textContent=state.settings.library||'尚未选择照片库';$('#choose-library').textContent=state.settings.library?'更换照片库':'选择照片库';
+  $('#library-path').textContent=state.settings.library||'尚未选择照片库';$('#choose-library').textContent='管理照片库';$('#format-filter').value=state.format;
   $('#activities').replaceChildren(...state.activities.map(a=>sideButton(a.name,a.id===state.activity,async()=>{resetLibrarySelection();state.activity=a.id;state.person='all';state.view='library';await refresh()})));
   $('#people').replaceChildren(sideButton('全部人物',state.person==='all',()=>{resetLibrarySelection();state.person='all';render()},state.photos.filter(p=>p.activity_id===state.activity).length),...state.people.map(p=>sideButton(p.name,state.person===p.id,()=>{resetLibrarySelection();state.person=p.id;render()},state.photos.filter(row=>row.activity_id===state.activity&&row.person_id===p.id).length)));
   renderFolders();
@@ -46,7 +48,7 @@ function renderFolders(){
   const show=state.view==='sd'&&Boolean(state.scanId);$('#source-section').hidden=!show;$('#source-breadcrumbs').hidden=!show;
   if(!show)return;
   const rows=folderPaths(),container=$('#source-folders');container.replaceChildren();
-  for(const path of rows){const b=sideButton(path||'来源根目录',state.sourceFolder===path,()=>chooseFolder(path),state.sourcePhotos.filter(p=>(p.relative_dir||'')===path).length);b.setAttribute('aria-label','文件夹 '+(path||'来源根目录'));b.title=path||state.source?.path||'';container.append(b)}
+  for(const path of rows){const b=sideButton(path||'来源根目录',state.sourceFolder===path,()=>chooseFolder(path),state.sourcePhotos.filter(p=>sourceDirs(p).includes(path)).length);b.setAttribute('aria-label','文件夹 '+(path||'来源根目录'));b.title=path||state.source?.path||'';container.append(b)}
   if(rows.length>1)container.append(sideButton('全部子文件夹',state.sourceFolder==='*',()=>chooseFolder('*'),state.sourcePhotos.length));
   const crumb=$('#source-breadcrumbs');crumb.replaceChildren(button('来源根目录',()=>chooseFolder('')));
   if(state.sourceFolder==='*')crumb.append(el('span','','/ 全部子文件夹'));
@@ -96,7 +98,7 @@ async function start(name,...args){
       const snap=await api('get_task',taskId);$('#task-message').textContent=snap.message||'处理中';$('#task-progress').textContent=snap.total?`${snap.done} / ${snap.total}`:'请稍候';
       const meter=$('#task-meter');if(snap.total){meter.max=snap.total;meter.value=snap.done}else meter.removeAttribute('value');
       if(['succeeded','partial','failed','cancelled'].includes(snap.status)){
-        if(name==='scan'&&snap.status==='succeeded'&&snap.result?.scan_id){state.source=proposedSource;state.sourceFolder='';state.scanId=snap.result.scan_id;state.sourcePhotos=snap.result.photos;state.selected.sd.clear();state.current=null}
+        if(name==='scan'&&snap.status==='succeeded'&&snap.result?.scan_id){state.source=proposedSource;state.sourceFolder='';state.format='all';state.scanId=snap.result.scan_id;state.sourcePhotos=snap.result.photos;state.selected.sd.clear();state.current=null}
         if(name==='import_selected'&&snap.result?.activity_id){state.activity=snap.result.activity_id;state.view='library';state.person='all';state.stage='all';state.selected.sd.clear()}
         if(['set_person','set_edited'].includes(name)&&snap.result?.operations?.length)state.lastOperation={id:snap.result.operations.at(-1),photoId:snap.result.photo_ids?.at(-1)};
         else if(name!=='scan')state.lastOperation=null;
@@ -113,7 +115,8 @@ async function start(name,...args){
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;state.current=null;state.date='all';state.onlySelected=false;render()});
 document.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{resetLibrarySelection();state.stage=b.dataset.stage;state.date='all';state.onlySelected=false;render()});
 $('#choose-source').onclick=safe(async()=>{if(state.busy)return;const result=await api('choose_source');if(!result)return;proposedSource=result;await start('scan',result.token)});
-$('#choose-library').onclick=safe(async()=>{const result=await api('choose_library');if(result){state.selected.library.clear();state.current=null;await refresh();if(result.recovery?.errors?.length)toast('有文件需要恢复，请关闭占用程序后在设置中重试')}});
+$('#choose-library').onclick=safe(()=>libraryDialog(refresh));
+$('#trash').onclick=safe(()=>trashDialog(start));
 $('#settings').onclick=safe(()=>settingsDialog(start));$('#import').onclick=safe(()=>importDialog(start,refresh));
 $('#classify').onclick=safe(()=>confirmAction('识别人脸','在本机按当前活动分人物。多人照片进入合照，不确定的保留待分类；手动确认过的照片将跳过。',()=>start('classify_activity',state.activity)));
 const actionIds=()=>visible().filter(p=>selected().has(p.id)).map(p=>p.id);
@@ -124,9 +127,11 @@ $('#mark-pending').onclick=safe(()=>{const ids=actionIds();if(state.photos.some(
 $('#mark-finished').onclick=safe(()=>start('set_finished',actionIds(),true));
 $('#unmark-finished').onclick=()=>{const ids=actionIds();confirmAction('取消成片','取消所选照片的全部成片关联，复制文件移入库内“取消关联保留”目录；原片与修图阶段保留。',()=>start('set_finished',ids,false))};
 $('#date-filter').onchange=e=>{if(state.view==='library')resetLibrarySelection();state.date=e.target.value;renderGallery();renderInspector()};$('#only-selected').onchange=e=>{state.onlySelected=e.target.checked;renderGallery()};
+$('#format-filter').onchange=e=>{if(state.view==='library')resetLibrarySelection();state.format=e.target.value;renderGallery();renderInspector()};
 $('#select-all').onclick=()=>{const rows=visible();if(rows.length&&rows.every(p=>selected().has(p.id)))rows.forEach(p=>selected().delete(p.id));else rows.forEach(p=>selected().add(p.id));if(state.onlySelected)renderGallery();else syncSelection()};
 $('#thumb-size').oninput=e=>setThumbnailSize(e.target.value);$('#thumb-smaller').onclick=()=>setThumbnailSize(state.thumbSize-40);$('#thumb-larger').onclick=()=>setThumbnailSize(state.thumbSize+40);
 $('#gallery').addEventListener('wheel',e=>{if(e.ctrlKey){e.preventDefault();setThumbnailSize(state.thumbSize+(e.deltaY<0?40:-40))}},{passive:false});
 $('#cancel-task').onclick=safe(async()=>{if(taskId){await api('cancel_task',taskId);$('#cancel-task').disabled=true;$('#task-message').textContent='正在等待当前照片安全结束…'}});
 setupSelection(renderInspector);setupViewer();onInspector(renderInspector);onFolder(chooseFolder);
+setupContextMenu({trash:()=>deleteDialog(actionIds(),start)},renderInspector);
 ready().then(async()=>{state.settings=await api('get_settings');state.thumbSize=state.settings.thumbnail_size||240;$('#thumb-size').value=state.thumbSize;await refresh()}).catch(error);

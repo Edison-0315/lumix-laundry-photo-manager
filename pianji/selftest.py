@@ -59,6 +59,13 @@ def run(root):
             from .faces import FaceEngine
             engine=FaceEngine(resource_root()/'models');faces=engine.detect_and_embed(bridge._lib.group(p['id']))
             result['face_count']=len(faces.faces);result['checks'].append('bundled YuNet/SFace execute')
+            wait(check(bridge.trash_photos([p['id']]))['task_id'])
+            assert len(check(bridge.list_photos({'trashed':True})))==1
+            assert not any(row['id']==p['id'] for row in check(bridge.list_photos({})))
+            wait(check(bridge.restore_photos([p['id']]))['task_id'])
+            assert bridge._lib.catalog.photo(p['id'])['primary_export_id']==p['primary_export_id']
+            assert all(Path(a['path']).is_file() for a in bridge._lib.catalog.photo(p['id'])['assets'])
+            result['checks'].append('packaged trash and restore preserve complete photo and exports')
             # Ask the real JS entrypoint to render the resulting library.
             window.evaluate_js("document.querySelector('[data-view=library]').click()")
             window.evaluate_js("location.reload()")

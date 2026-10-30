@@ -13,6 +13,7 @@ export function syncSelection(){
   const rows=visible();$('#select-all').textContent=rows.length&&rows.every(p=>set.has(p.id))?'取消全选':'全选';
   const picked=rows.filter(p=>set.has(p.id)),exportView=state.view==='library'&&state.stage==='exports';
   $('#assign').disabled=!picked.length||state.busy;
+  $('#more-actions').disabled=!picked.length||state.busy;$('#trash').disabled=!state.settings.library_available||state.busy;
   $('#mark-edited').hidden=exportView;$('#mark-pending').hidden=exportView;$('#mark-finished').hidden=exportView;
   $('#mark-edited').disabled=!picked.some(p=>!p.edited)||state.busy;$('#mark-pending').disabled=!picked.some(p=>p.edited)||state.busy;
   $('#mark-finished').disabled=!picked.some(p=>!p.primary_export_id&&assets(p).some(a=>a.kind==='jpeg'))||state.busy;

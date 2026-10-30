@@ -17,6 +17,7 @@ const server=http.createServer((req,res)=>{
     const ok=data=>({ok:true,data});let job=null;
     window.pywebview={api:{
       get_settings:async()=>ok({library_available:test.library,library:test.library?'C:/库':null}),save_settings:async()=>ok({}),
+      list_libraries:async()=>ok([]),
       list_activities:async()=>ok([{id:'act',name:'活动'}]),list_people:async()=>ok([{id:'u',name:'待分类',role:'unclassified'}]),list_photos:async()=>ok(test.photos),
       choose_library:async()=>{test.chooseCalls++;if(test.cancelLibrary)return ok(null);test.library=true;return ok({path:'C:/库'})},choose_source:async()=>ok({token:'t',path:test.slow?'C:/新来源':'C:/SD',name:'SD'}),
       scan:async()=>{test.cancelled=false;job='scan';return ok({task_id:'scan'})},
@@ -37,20 +38,20 @@ const server=http.createServer((req,res)=>{
     await page.locator('.photo').first().waitFor();assert.equal(await page.locator('.photo').count(),1);assert.equal(await page.locator('.photo .name').first().textContent(),'a');
     console.log('folders ok');
     await page.locator('.photo').first().click();
-    await page.evaluate(()=>test.cancelLibrary=true);await page.getByRole('button',{name:'导入所选',exact:true}).click();await page.waitForFunction(()=>test.chooseCalls===1);
-    assert.equal(await page.locator('#modal').evaluate(el=>el.open),false);assert.equal(await page.locator('.photo.checked').count(),1);
+    await page.evaluate(()=>test.cancelLibrary=true);await page.getByRole('button',{name:'导入所选',exact:true}).click();await page.getByRole('button',{name:'打开已有照片库',exact:true}).click();await page.waitForFunction(()=>test.chooseCalls===1);
+    await page.getByRole('button',{name:'关闭',exact:true}).click();assert.equal(await page.locator('.photo.checked').count(),1);
     await page.evaluate(()=>test.cancelLibrary=false);
-    await page.getByRole('button',{name:'导入所选',exact:true}).click();await page.getByRole('button',{name:'开始导入',exact:true}).waitFor();
+    await page.getByRole('button',{name:'导入所选',exact:true}).click();await page.getByRole('button',{name:'打开已有照片库',exact:true}).click();await page.getByRole('button',{name:'开始导入',exact:true}).waitFor();
     assert.equal(await page.evaluate(()=>test.chooseCalls),2,'import must prompt for a library automatically; cancel preserves selection');
     console.log('library prompt ok');
     await page.getByRole('button',{name:'开始导入',exact:true}).click();
     await page.waitForFunction(()=>test.imports.length===1);await page.locator('#taskbar[hidden]').waitFor({state:'attached'});await page.locator('.photo').first().waitFor();
     console.log('import ok');
-    await page.locator('.photo').first().click();await page.getByRole('button',{name:'标为成片',exact:true}).click();
+    await page.locator('.photo').first().click({button:'right'});await page.getByRole('menuitem',{name:'标为成片',exact:true}).click();
     await page.waitForFunction(()=>test.calls.length===1);
     await page.locator('[data-stage=exports]').click();assert.equal(await page.locator('.photo.checked').count(),0,'stage switch clears original selection');
     assert.equal(await page.locator('#mark-pending').isVisible(),false);assert.equal(await page.locator('#mark-edited').isVisible(),false);
-    await page.locator('.photo').first().click();await page.getByRole('button',{name:'取消成片',exact:true}).click();await page.getByRole('button',{name:'确认',exact:true}).click();
+    await page.locator('.photo').first().click({button:'right'});await page.getByRole('menuitem',{name:'取消成片',exact:true}).click();await page.getByRole('button',{name:'确认',exact:true}).click();
     await page.waitForFunction(()=>test.calls.length===2);await page.waitForFunction(()=>document.querySelectorAll('.photo').length===0);
     assert.deepEqual(await page.evaluate(()=>test.calls.map(c=>c.value)),[true,false]);
     await page.getByRole('button',{name:'SD 卡选片',exact:true}).click();await page.locator('.photo').first().click();await page.evaluate(()=>test.slow=true);
