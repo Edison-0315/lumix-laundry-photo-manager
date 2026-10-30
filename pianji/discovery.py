@@ -2,25 +2,42 @@ from pathlib import Path
 from datetime import datetime
 import hashlib
 import os
+import logging
 from PIL import Image
 from .domain import FileAsset,PhotoGroup
 
 KINDS={'.jpg':'jpeg','.jpeg':'jpeg','.rw2':'raw','.dng':'raw','.cr2':'raw','.cr3':'raw','.nef':'raw','.arw':'raw','.raf':'raw','.orf':'raw','.xmp':'xmp'}
 
-def scan_source(root,cancel=lambda:False,progress=lambda n,t,m:None):
+def scan_source(root,cancel=lambda:False,progress=lambda n,t,m:None,errors=None,formats='both'):
+    if formats not in ('both','jpeg','raw'):raise ValueError('未知读取格式')
+    errors=errors if errors is not None else []
+    def report(path,operation,error):
+        item={'path':str(path),'name':Path(path).name,'operation':operation,'message':str(error),'winerror':getattr(error,'winerror',None),'errno':error.errno}
+        errors.append(item);logging.warning('Source read skipped [%s]: %s: %s',operation,path,error)
     root=Path(root).resolve()
     if not root.is_dir(): raise ValueError('来源文件夹不存在')
     paired={}
     progress(0,0,'正在查找照片')
-    for parent,dirs,files in os.walk(root,followlinks=False):
+    for parent,dirs,files in os.walk(root,followlinks=False,onerror=lambda e:report(e.filename or root,'枚举文件夹',e)):
         if cancel(): return []
-        dirs[:]=[d for d in dirs if not (Path(parent)/d).is_symlink() and not (Path(parent)/d).is_junction()]
+        kept=[]
+        for d in dirs:
+            if cancel():return []
+            p=Path(parent)/d
+            try:
+                if not p.is_symlink() and not p.is_junction():kept.append(d)
+            except OSError as e:report(p,'检查文件夹',e)
+        dirs[:]=kept
         for name in sorted(files):
             if cancel(): return []
             p=Path(parent)/name
-            if p.is_symlink() or not p.resolve().is_relative_to(root): continue
             kind=KINDS.get(p.suffix.lower())
             if not kind: continue
+            if formats!='both' and kind not in (('raw','xmp') if formats=='raw' else ('jpeg',)):continue
+            try:
+                if p.is_symlink() or not p.resolve().is_relative_to(root): continue
+            except OSError as e:
+                report(p,'检查照片文件',e);continue
             # Camera sidecars can be A.xmp or A.RW2.xmp.
             stem=p.stem
             if kind=='xmp' and Path(stem).suffix.lower() in KINDS: stem=Path(stem).stem
@@ -45,9 +62,9 @@ def scan_source(root,cancel=lambda:False,progress=lambda n,t,m:None):
         first.files.extend(second.files)
         for a in first.files:a.photo_id=first.id
         paired={key:g for key,g in paired.items() if g is not second}
-    return _groups(paired,progress,cancel)
+    return _groups(paired,progress,cancel,report)
 
-def _groups(paired,progress,cancel=lambda:False):
+def _groups(paired,progress,cancel=lambda:False,report=lambda p,o,e:None):
     groups=[g for g in paired.values() if any(a.kind!='xmp' for a in g.files)]
     for n,g in enumerate(groups,1):
         if cancel(): return groups[:n-1]
@@ -60,13 +77,18 @@ def _groups(paired,progress,cancel=lambda:False):
                         try: g.captured_at=datetime.strptime(str(original),'%Y:%m:%d %H:%M:%S').isoformat()
                         except ValueError: pass
                     im.verify()
-            except Exception: g.error='JPEG无法预览，仍可导入原文件'
+            except Exception as e:
+                g.error='JPEG无法预览，仍可导入原文件'
+                if isinstance(e,OSError) and (e.errno is not None or getattr(e,'winerror',None)):
+                    report(jpg.path,'读取JPEG信息',e);g.files.remove(jpg)
         else:
             try:
                 import exifread
                 with open(g.files[0].path,'rb') as f: tags=exifread.process_file(f,details=False,stop_tag='DateTimeOriginal')
                 original=tags.get('EXIF DateTimeOriginal')
                 if original: g.captured_at=datetime.strptime(str(original),'%Y:%m:%d %H:%M:%S').isoformat()
+            except OSError as e:
+                report(g.files[0].path,'读取RAW信息',e);g.files.pop(0)
             except Exception: pass
         progress(n,len(groups),'读取照片信息')
-    return groups
+    return [g for g in groups if any(a.kind in ('jpeg','raw') for a in g.files)]

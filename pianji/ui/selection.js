@@ -1,4 +1,5 @@
-import {state,$,selected,visible} from './store.js';
+import {state,$,selected,visible,libraryFolderMode,libraryFolders,childFolders} from './store.js';
+import {choices,folderScope,syncChoices,selectableFolderKeys} from './choice-list.js';
 import {syncSelection,selectPhoto,doubleClickPhoto} from './gallery.js';
 export function setupSelection(refreshInspector){
   let drag=null,suppress=false,raf=0;
@@ -46,7 +47,7 @@ export function setupSelection(refreshInspector){
   document.addEventListener('pointerup',e=>{if(drag?.id===e.pointerId)finish()});document.addEventListener('pointercancel',()=>finish(true));
   document.addEventListener('keydown',e=>{
     if(drag&&e.key==='Escape'){e.preventDefault();finish(true)}
-    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='a'&&e.target.closest('#gallery')&&!$('#viewer').open){e.preventDefault();visible().forEach(p=>selected().add(p.id));syncSelection()}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='a'&&e.target.closest('#gallery')&&!$('#viewer').open){e.preventDefault();selectableFolderKeys().forEach(key=>choices(folderScope()).add(key));if(!libraryFolderMode())visible().forEach(p=>selected().add(p.id));syncChoices(folderScope());syncSelection()}
   });
   document.addEventListener('click',e=>{
     if(suppress){suppress=false;e.preventDefault();e.stopImmediatePropagation();return}

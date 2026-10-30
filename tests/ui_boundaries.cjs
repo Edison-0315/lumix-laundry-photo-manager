@@ -13,7 +13,7 @@ function fixture(){
 }
 (async()=>{
   await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({channel:'msedge',headless:true});const failures=[];
-  async function scenario(name,fn){const page=await browser.newPage({viewport:{width:1440,height:960}});page.setDefaultTimeout(5000);try{await page.addInitScript(fixture);await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);await page.locator('[data-view=library]').click();await page.locator('.photo').first().waitFor();await fn(page);console.log('PASS',name)}catch(e){failures.push(name+': '+e.message);console.log('FAIL',name,e.message.split('\n')[0])}finally{await page.close()}}
+  async function scenario(name,fn){const page=await browser.newPage({viewport:{width:1440,height:960}});page.setDefaultTimeout(5000);try{await page.addInitScript(fixture);await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);await page.locator('[data-view=library]').click();await page.locator('#toggle-browse').click();await page.locator('.photo').first().waitFor();await fn(page);console.log('PASS',name)}catch(e){failures.push(name+': '+e.message);console.log('FAIL',name,e.message.split('\n')[0])}finally{await page.close()}}
   try{
     await scenario('external save revalidates thumbnail and big preview',async p=>{
       await p.locator('.photo[data-id=a]').click();await p.getByRole('button',{name:'用 Photoshop 打开',exact:true}).click();
@@ -32,9 +32,9 @@ function fixture(){
       assert.equal(await p.locator('.photo[data-id=a]').count(),0);assert.equal(await p.locator('.photo.checked').count(),1);
     });
     await scenario('person and activity changes reset selected-only filter',async p=>{
-      await p.locator('#select-all').click();await p.locator('#only-selected').check();await p.locator('#people button').filter({hasText:'人物一'}).click();
+      await p.locator('#select-all').click();await p.locator('#only-selected').check();await p.locator('#people button').filter({hasText:'人物一'}).dblclick();await p.locator('#toggle-browse').click();
       assert.equal(await p.locator('#only-selected').isChecked(),false);assert.equal(await p.locator('.photo').count(),1);
-      await p.locator('.photo').click();await p.locator('#only-selected').check();await p.locator('#activities button').filter({hasText:'活动二'}).click();
+      await p.locator('.photo').click();await p.locator('#only-selected').check();await p.locator('#activities button').filter({hasText:'活动二'}).dblclick();await p.locator('#toggle-browse').click();
       assert.equal(await p.locator('#only-selected').isChecked(),false);assert.equal(await p.locator('.photo').count(),1);
     });
     assert.deepEqual(failures,[]);

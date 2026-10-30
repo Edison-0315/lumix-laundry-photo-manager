@@ -1,9 +1,14 @@
 import {state,$,selected,visible,current,button,el,error} from './store.js';
 import {syncSelection,openViewer} from './gallery.js';
+let menu=null,origin=null;
+const close=(focus=false)=>{menu?.remove();menu=null;if(focus)origin?.focus()};
+export function commandMenu(x,y,title,entries){
+  close();origin=document.activeElement;menu=el('div','context-menu');menu.setAttribute('role','menu');menu.setAttribute('aria-label',title);menu.append(el('div','menu-heading',title));
+  for(const item of entries){const b=button(item.name,()=>{close();Promise.resolve().then(item.fn).catch(error)},item.danger?'danger':'');b.disabled=Boolean(item.disabled);b.setAttribute('role','menuitem');menu.append(b)}
+  document.body.append(menu);const r=menu.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(x,innerWidth-r.width-8))+'px';menu.style.top=Math.max(8,Math.min(y,innerHeight-r.height-8))+'px';menu.querySelector('button:not(:disabled)')?.focus();
+}
 
 export function setupContextMenu(actions,inspect){
-  let menu=null,origin=null;
-  const close=(focus=false)=>{menu?.remove();menu=null;if(focus)origin?.focus()};
   const show=(x,y)=>{
     close();const rows=visible().filter(p=>selected().has(p.id));if(!rows.length)return;
     origin=document.activeElement;menu=el('div','context-menu');menu.setAttribute('role','menu');menu.setAttribute('aria-label',`已选 ${rows.length} 张照片`);

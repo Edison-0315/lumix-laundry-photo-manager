@@ -71,6 +71,8 @@ def run(root):
             window.evaluate_js("location.reload()")
             time.sleep(2)
             window.evaluate_js("document.querySelector('[data-view=library]').click()")
+            assert window.evaluate_js("document.querySelectorAll('.person-folder').length")>=2
+            window.evaluate_js("document.querySelector('#toggle-browse').click()")
             time.sleep(1)
             assert window.evaluate_js("document.querySelectorAll('.photo').length")>=1
             result['checks'].append('real JavaScript lists persisted library')

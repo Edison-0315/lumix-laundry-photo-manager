@@ -21,7 +21,7 @@ const server=http.createServer((req,res)=>{
   });
   try{
     await page.goto('http://127.0.0.1:'+server.address().port+'/index.html');
-    await page.getByRole('button',{name:'照片库',exact:true}).click();
+    await page.getByRole('button',{name:'照片库',exact:true}).click();await page.locator('#toggle-browse').click();
     await page.locator('.photo').first().waitFor();
     assert.equal(await page.locator('.photo').count(),200);
     const initial=await page.locator('.photo').first().boundingBox();

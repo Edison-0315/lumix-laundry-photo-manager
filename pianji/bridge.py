@@ -71,16 +71,17 @@ class Bridge:
         return {'token':token,'name':root.name,'path':str(root)}
 
     @api
-    def scan(self,source_token):
+    def scan(self,source_token,formats='both'):
         if source_token not in self._grants: raise PathNotGranted('请通过文件夹选择窗口指定来源')
         root=self._grants[source_token]
         def work(cancel,progress):
-            groups=scan_source(root,cancel,progress)
+            errors=[];groups=scan_source(root,cancel,progress,errors=errors,formats=formats)
             if cancel():return {'cancelled':True}
+            if not groups and errors:return {'photos':[],'errors':errors,'cancelled':False}
             scan_id=uid(); self._scans[scan_id]={g.id:g for g in groups}
             def relative(path):
                 p=Path(path).relative_to(root);return '' if p==Path('.') else p.as_posix()
-            return {'scan_id':scan_id,'photos':[{**asdict(g),'relative_dir':relative(g.source_dir),'relative_dirs':sorted({relative(Path(a.path).parent) for a in g.files})} for g in groups],'cancelled':False}
+            return {'scan_id':scan_id,'photos':[{**asdict(g),'relative_dir':relative(g.source_dir),'relative_dirs':sorted({relative(Path(a.path).parent) for a in g.files})} for g in groups],'errors':errors,'cancelled':False}
         return self._submit('扫描照片',work)
 
     @api
@@ -174,6 +175,10 @@ class Bridge:
     def list_activities(self): return self._library().catalog.activities()
 
     @api
+    def create_activity(self,name):
+        self._check_switch();return self._library().create_activity(name)
+
+    @api
     def list_people(self,activity_id): return self._library().catalog.people(activity_id)
 
     @api
@@ -232,7 +237,14 @@ class Bridge:
     @api
     def create_person(self,activity_id,name):
         lib=self._library()
-        with lib.lock: return lib.catalog.add_person(activity_id,name)
+        with lib.lock:
+            lib._ready()
+            if not any(a['id']==activity_id for a in lib.catalog.activities()):raise ValueError('活动不存在')
+            return lib.catalog.add_person(activity_id,name)
+
+    @api
+    def delete_people(self,person_ids):
+        lib=self._library();return self._submit('删除人物分类',lambda c,p:lib.delete_people(person_ids,c,p))
 
     @api
     def rename_person(self,person_id,name):

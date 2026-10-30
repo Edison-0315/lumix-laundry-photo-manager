@@ -34,7 +34,7 @@ const server=http.createServer((req,res)=>{
   try{
     await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
     await page.getByRole('button',{name:'选择来源',exact:true}).click();
-    await page.getByRole('button',{name:'文件夹 DCIM/100',exact:true}).click();
+    await page.getByRole('button',{name:'文件夹 DCIM/100',exact:true}).dblclick();
     await page.locator('.photo').first().waitFor();assert.equal(await page.locator('.photo').count(),1);assert.equal(await page.locator('.photo .name').first().textContent(),'a');
     console.log('folders ok');
     await page.locator('.photo').first().click();
@@ -45,8 +45,7 @@ const server=http.createServer((req,res)=>{
     assert.equal(await page.evaluate(()=>test.chooseCalls),2,'import must prompt for a library automatically; cancel preserves selection');
     console.log('library prompt ok');
     await page.getByRole('button',{name:'开始导入',exact:true}).click();
-    await page.waitForFunction(()=>test.imports.length===1);await page.locator('#taskbar[hidden]').waitFor({state:'attached'});await page.locator('.photo').first().waitFor();
-    console.log('import ok');
+    await page.waitForFunction(()=>test.imports.length===1);await page.locator('#taskbar[hidden]').waitFor({state:'attached'});await page.locator('#toggle-browse').click();await page.locator('.photo').first().waitFor();console.log('import ok');
     await page.locator('.photo').first().click({button:'right'});await page.getByRole('menuitem',{name:'标为成片',exact:true}).click();
     await page.waitForFunction(()=>test.calls.length===1);
     await page.locator('[data-stage=exports]').click();assert.equal(await page.locator('.photo.checked').count(),0,'stage switch clears original selection');

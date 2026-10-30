@@ -22,6 +22,18 @@ class Library:
 
     def recover_pending(self): return self.journal.recover_pending()
 
+    def create_activity(self,name):
+        with self.lock:
+            self._ready();safe_name(name)
+            if any(a['name'].casefold()==name.casefold() for a in self.catalog.activities()):raise ValueError('同名活动已存在，请选择已有活动')
+            folder=inside(self.root,self.root/name);folder.mkdir(exist_ok=False)
+            try:return self.catalog.activity(name)
+            except Exception:
+                # Only the empty directory exclusively created by this call.
+                try:folder.rmdir()
+                except OSError:pass
+                raise
+
     def _ready(self):
         if self._closed: raise ValueError('照片库已关闭')
         if self.catalog.rows("SELECT id FROM operations WHERE phase!='committed'"):
@@ -321,6 +333,27 @@ class Library:
                     # when restored; never leave a dangling person reference.
                     db.execute('UPDATE photos SET person_id=? WHERE person_id=?',(target_id,source_id))
                     db.execute('DELETE FROM people WHERE id=?',(source_id,))
+            return result
+
+    def delete_people(self,person_ids,cancel=lambda:False,progress=lambda n,t,m:None):
+        with self.lock:
+            self._ready();result={'deleted_people':[],'operations':[],'photo_ids':[],'errors':[],'cancelled':False}
+            for ident in dict.fromkeys(person_ids):
+                if cancel():result['cancelled']=True;break
+                try:
+                    person=self.catalog.person(ident)
+                    if person['role']:raise ValueError('合照和待分类是固定分类，不能删除')
+                    target=next(p for p in self.catalog.people(person['activity_id']) if p['role']=='unclassified')
+                    ids=[p['id'] for p in self.catalog.photos(person['activity_id']) if p['person_id']==ident]
+                    batch=self.set_person(ids,target['id'],cancel=cancel,progress=progress)
+                    for key in ('operations','photo_ids','errors'):result[key].extend(batch[key])
+                    if batch['cancelled'] or cancel():result['cancelled']=True;break
+                    if batch['errors']:continue
+                    self.journal.execute('delete_person',[],[
+                        ('UPDATE photos SET person_id=? WHERE person_id=?',(target['id'],ident)),
+                        ('DELETE FROM people WHERE id=?',(ident,))])
+                    result['deleted_people'].append(ident)
+                except Exception as e:result['errors'].append({'id':ident,'message':str(e)})
             return result
 
     def group(self,photo_id,prefer_export=False):

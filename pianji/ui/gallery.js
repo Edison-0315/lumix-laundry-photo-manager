@@ -1,4 +1,5 @@
-import {state,$,selected,visible,current,assets,el,button,error,childFolders} from './store.js';
+import {state,$,selected,visible,current,assets,el,button,error,childFolders,libraryFolderMode,libraryFolders} from './store.js';
+import {bindChoice,choices,folderScope,syncChoices} from './choice-list.js';
 import {api} from './api.js';
 import {preview} from './previews.js';
 let inspectorHook=()=>{},folderHook=()=>{},observer,queue=[],active=0,revision=0,cards=new Map(),drawn=new Set(),beforeClick=null,filterTimer;
@@ -8,9 +9,12 @@ export function syncSelection(){
   const set=selected();
   for(const id of new Set([...drawn,...set])){if(drawn.has(id)===set.has(id))continue;const card=cards.get(id);if(!card)continue;const checked=set.has(id);card.classList.toggle('checked',checked);card.setAttribute('aria-selected',String(checked));const pick=card.querySelector('.pick');pick.textContent=checked?'✓':'';pick.setAttribute('aria-pressed',String(checked))}
   drawn=new Set([...set].filter(id=>cards.has(id)));
-  const count=`已选 ${set.size} 张`;if($('#selection-count').textContent!==count)$('#selection-count').textContent=count;
+  const folderCount=choices(folderScope()).size;
+  const count=libraryFolderMode()?`已选 ${folderCount} 个文件夹`:`已选 ${set.size} 张`+(state.view==='sd'&&folderCount?` · ${folderCount} 个文件夹`:'');if($('#selection-count').textContent!==count)$('#selection-count').textContent=count;
   $('#import').disabled=!set.size||state.busy;
-  const rows=visible();$('#select-all').textContent=rows.length&&rows.every(p=>set.has(p.id))?'取消全选':'全选';
+  const rows=libraryFolderMode()?[]:visible();$('#select-all').textContent=rows.length&&rows.every(p=>set.has(p.id))?'取消全选':'全选';
+  if(libraryFolderMode()){const folders=libraryFolders(),chosen=choices(folderScope());$('#select-all').textContent=folders.length&&folders.every(p=>chosen.has(p.key))?'取消全选':'全选'}
+  else if(state.view==='sd'&&childFolders().length){const folders=childFolders();$('#select-all').textContent=folders.every(key=>choices(folderScope()).has(key))&&rows.every(p=>set.has(p.id))?'取消全选':'全选'}
   const picked=rows.filter(p=>set.has(p.id)),exportView=state.view==='library'&&state.stage==='exports';
   $('#assign').disabled=!picked.length||state.busy;
   $('#more-actions').disabled=!picked.length||state.busy;$('#trash').disabled=!state.settings.library_available||state.busy;
@@ -18,7 +22,7 @@ export function syncSelection(){
   $('#mark-edited').disabled=!picked.some(p=>!p.edited)||state.busy;$('#mark-pending').disabled=!picked.some(p=>p.edited)||state.busy;
   $('#mark-finished').disabled=!picked.some(p=>!p.primary_export_id&&assets(p).some(a=>a.kind==='jpeg'))||state.busy;
   $('#unmark-finished').hidden=!exportView&&!picked.some(p=>p.primary_export_id);$('#unmark-finished').disabled=!picked.some(p=>p.primary_export_id)||state.busy;
-  for(const id of ['choose-source','choose-library','settings','new-person','manage-people'])$('#'+id).disabled=state.busy||(['new-person','manage-people'].includes(id)&&!state.activity);
+  for(const id of ['choose-source','choose-library','settings','new-person','manage-people','new-activity'])$('#'+id).disabled=state.busy||(['new-person','manage-people'].includes(id)&&!state.activity)||(id==='new-activity'&&!state.settings.library_available);
 }
 export function selectPhoto(id,event={}){
   if(event.detail>1)return;
@@ -48,12 +52,20 @@ async function pump(){
 }
 export function renderGallery(){
   clearTimeout(filterTimer);beforeClick=null;revision++;queue=[];observer?.disconnect();cards=new Map();drawn=new Set();
-  const grid=$('#gallery'),rows=visible(),rev=revision;grid.replaceChildren();
+  const grid=$('#gallery'),rows=libraryFolderMode()?[]:visible(),rev=revision;grid.replaceChildren();
   if(!rows.some(p=>p.id===state.current)){const next=rows.find(p=>selected().has(p.id))?.id||null;if(next!==state.current){state.current=next;queueMicrotask(inspectorHook)}}
   grid.style.setProperty('--thumb-size',state.thumbSize+'px');
   $('#photo-count').textContent=`${rows.length} 张照片`;
-  const folders=childFolders();
-  for(const path of folders){const b=button('',()=>folderHook(path),'folder-card');b.append(el('strong','',path.split('/').pop()),el('span','small muted','打开文件夹'));b.setAttribute('aria-label',path.split('/').pop());grid.append(b)}
+  const folders=state.view==='sd'?childFolders().map(path=>({key:path,label:path.split('/').pop(),kind:'source',path})):libraryFolders();
+  if(libraryFolderMode()){const valid=new Set(folders.map(f=>f.key)),chosen=choices(folderScope());for(const key of chosen)if(!valid.has(key))chosen.delete(key)}
+  if(libraryFolderMode())$('#photo-count').textContent=`${folders.filter(f=>!state.onlySelected||choices(folderScope()).has(f.key)).length} 个文件夹`;
+  for(const folder of folders){
+    if(state.onlySelected&&!choices(folderScope()).has(folder.key))continue;
+    const b=button('',()=>{},'folder-card '+(folder.kind==='person'?'person-folder':folder.kind==='stage'?'stage-folder':''));
+    if(folder.person)b.dataset.person=folder.person;if(folder.stage)b.dataset.stage=folder.stage;
+    b.append(el('span','folder-icon','▱'),el('strong','',folder.label),el('span','small muted',folder.count===undefined?'双击进入':folder.count+' 张照片 · 双击进入'));
+    b.setAttribute('aria-label',folder.label);bindChoice(b,folderScope(),folder.key,()=>folderHook(folder),syncSelection);grid.append(b);
+  }
   if(!rows.length&&!folders.length){
     const empty=el('div','empty');empty.append(el('div','empty-icon','▧'),el('span','',state.view==='sd'?(state.source?'没有符合条件的照片':'从SD卡开始选片'):(state.settings.library_available?'当前筛选下没有照片':'先选择照片库')),
       el('small','',state.view==='sd'?'选择来源后，单击选中、双击查看，拖动可批量选择':'导入的照片将在这里按活动、人物与修图阶段整理'));grid.append(empty);
