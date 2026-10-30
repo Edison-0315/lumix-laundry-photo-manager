@@ -1,4 +1,4 @@
-# LUMIX 洗衣机管理器 0.7
+# LUMIX 洗衣机管理器 · v0.7 正式版
 
 面向摄影师的 Windows 11 本机照片分类与修图管理工具。先在 SD 卡选片，再按活动、人物和修图阶段整理照片，关联 JPEG、RAW 与成片。
 
@@ -9,6 +9,8 @@
 [![功能宣传片预览](https://github.com/Edison-0315/lumix-laundry-photo-manager/raw/refs/heads/main/docs/media/preview.gif)](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/download/v0.7.0/LUMIX-Photo-Manager-Promo-1080p60.mp4)
 
 [观看或下载完整宣传片（含片头，43.5 秒，1080p60，无音乐）](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/download/v0.7.0/LUMIX-Photo-Manager-Promo-1080p60.mp4)
+
+[v0.7 正式版详细说明](docs/发布说明-0.7.md)
 
 ## 使用
 
