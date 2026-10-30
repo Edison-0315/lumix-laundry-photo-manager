@@ -1,18 +1,18 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; connect-src 'self'">
-<title>片集</title><link rel="stylesheet" href="app.css"></head>
+<title>洗衣机管理器</title><link rel="icon" href="lumix.ico"><link rel="stylesheet" href="app.css"></head>
 <body>
-<header class="appbar"><div class="brand"><span class="brandmark">▧</span>片集</div><span id="context" class="muted">从选片到交付</span><div class="spacer"></div><button id="settings" class="outline">设置</button></header>
+<header class="appbar"><div class="brand"><img class="brandmark" src="lumix.svg" alt="LUMIX">洗衣机管理器</div><span id="context" class="muted">从选片到交付</span><div class="spacer"></div><button id="settings" class="outline icon-button" aria-label="设置" title="设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9.5 3-.7 2.2-2 .9-2.2-.5-2.1 3.6L4 11v2l-1.5 1.8 2.1 3.6 2.2-.5 2 .9.7 2.2h5l.7-2.2 2-.9 2.2.5 2.1-3.6L20 13v-2l1.5-1.8-2.1-3.6-2.2.5-2-.9-.7-2.2z"/><circle cx="12" cy="12" r="3.2"/></svg></button></header>
 <div class="shell">
-  <aside class="sidebar"><nav><button data-view="sd" class="nav active">SD 卡选片</button><button data-view="library" class="nav">照片库</button></nav>
+  <aside class="sidebar"><nav><button data-view="sd" class="nav active">选片</button><button data-view="library" class="nav">照片库</button></nav>
     <section id="activities-section"><div class="section-head"><span class="section-label">活动</span><button id="new-activity" aria-label="新建活动">＋</button></div><div id="activities"></div></section>
     <section id="source-section" hidden><div class="section-label">来源文件夹</div><div id="source-folders"></div></section>
     <section id="people-section" hidden><div class="section-head"><button id="people-collapse" aria-expanded="true" aria-controls="people-body">▾ 人物</button><button id="new-person" aria-label="新建人物">＋</button></div><div id="people-body"><button id="people-all" class="side-item">全部人物</button><div id="people"></div><button id="manage-people" class="muted small">管理人物</button><div class="small muted list-hint">单击进入 · 右键管理</div></div></section>
-    <div class="sidebar-bottom"><span id="library-path" class="small muted">尚未选择照片库</span><button id="choose-library" class="outline">管理照片库</button><button id="trash" class="muted small">回收站</button></div>
+    <div class="sidebar-bottom"><span id="library-path" class="small muted">尚未选择照片库</span><button id="choose-library" class="outline">管理照片库</button><button id="trash" class="trash-nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg>回收站</button></div>
   </aside>
   <main>
-    <div class="pagehead"><button id="back" class="outline" aria-label="返回" title="返回上一页（Alt+←）" disabled>← 返回</button><div><h1 id="title">SD 卡选片</h1><p id="subtitle" class="muted">选择SD卡或照片文件夹，在这里查看和选片</p></div><label id="source-read-label" class="small muted">读取 <select id="source-read-format" aria-label="读取格式"><option value="both">JPEG 和 RAW</option><option value="jpeg">仅 JPEG</option><option value="raw">仅 RAW</option></select></label><button id="choose-source" class="outline">选择来源</button><button id="classify" class="outline" hidden>识别人脸</button><button id="toggle-browse" class="outline" hidden>平铺照片</button></div>
+    <div class="pagehead"><button id="back" class="outline" aria-label="返回" title="返回上一页（Alt+←）" disabled>← 返回</button><div><h1 id="title">选片</h1><p id="subtitle" class="muted">选择SD卡或照片文件夹，在这里查看和选片</p></div><label id="source-read-label" class="small muted">读取 <select id="source-read-format" aria-label="读取格式"><option value="both">JPEG 和 RAW</option><option value="jpeg">仅 JPEG</option><option value="raw">仅 RAW</option></select></label><button id="choose-source" class="outline">选择来源</button><button id="classify" class="outline" hidden>识别人脸</button><button id="toggle-browse" class="outline" hidden>平铺照片</button></div>
     <div id="stage-tabs" class="tabs" hidden><button data-stage="all" class="active">全部照片</button><button data-stage="pending">选出原片</button><button data-stage="edited">已修原片</button><button data-stage="exports">成片</button></div>
     <div id="source-breadcrumbs" class="breadcrumbs" hidden></div>
     <div id="library-breadcrumbs" class="breadcrumbs" hidden></div>

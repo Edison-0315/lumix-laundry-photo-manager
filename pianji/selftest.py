@@ -16,7 +16,7 @@ def run(root):
     before={str(p.relative_to(source)):hashlib.sha256(p.read_bytes()).hexdigest() for p in source.rglob('*') if p.is_file()}
     choices=iter([str(source),str(library),str(root/'成片.jpg')])
     bridge=Bridge(config,dialog=lambda kind:next(choices),model_root=resource_root()/'models')
-    window=webview.create_window('片集 · 临时目录验证',str(resource_root()/'pianji'/'ui'/'index.html'),js_api=bridge,width=1440,height=960,background_color='#151619')
+    window=webview.create_window('洗衣机管理器 · 临时目录验证',str(resource_root()/'pianji'/'ui'/'index.html'),js_api=bridge,width=1440,height=960,background_color='#151619')
     bridge._window=window
     def check(response):
         if not response['ok']: raise AssertionError(response)
@@ -41,6 +41,9 @@ def run(root):
             imported=wait(check(bridge.import_selected(scan['scan_id'],[p['id'] for p in scan['photos']],'桌面 验证','both'))['task_id'])
             photos=check(bridge.list_photos({}));p=photos[0]
             assert check(bridge.get_preview(p['id'],'preview'))['url']
+            metadata=check(bridge.get_photo_details(p['id']))
+            assert metadata['files'] and metadata['total_bytes']>0
+            result['checks'].append('packaged EXIF/file-size reader executes on actual files')
             person=next((person for person in check(bridge.list_people(p['activity_id'])) if person['name']=='模特 测试'),None)
             if not person: person=check(bridge.create_person(p['activity_id'],'模特 测试'))
             wait(check(bridge.set_person([p['id']],person['id']))['task_id'])
@@ -66,6 +69,11 @@ def run(root):
             assert bridge._lib.catalog.photo(p['id'])['primary_export_id']==p['primary_export_id']
             assert all(Path(a['path']).is_file() for a in bridge._lib.catalog.photo(p['id'])['assets'])
             result['checks'].append('packaged trash and restore preserve complete photo and exports')
+            wait(check(bridge.delete_activity(p['activity_id']))['task_id'])
+            assert not any(a['id']==p['activity_id'] for a in check(bridge.list_activities()))
+            wait(check(bridge.restore_photos([row['id'] for row in photos]))['task_id'])
+            assert any(a['id']==p['activity_id'] for a in check(bridge.list_activities()))
+            result['checks'].append('packaged activity deletion and photo restore preserve activity and photo groups')
             # Ask the real JS entrypoint to render the resulting library.
             window.evaluate_js("document.querySelector('[data-view=library]').click()")
             window.evaluate_js("location.reload()")
@@ -92,5 +100,5 @@ def run(root):
         finally:
             (root/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
             bridge._close();window.destroy()
-    webview.start(diagnostic,gui='edgechromium',storage_path=str(config/'webview'),private_mode=True,debug=False)
+    webview.start(diagnostic,gui='edgechromium',storage_path=str(config/'webview'),private_mode=True,debug=False,icon=str(resource_root()/'pianji/ui/lumix.ico'))
     return 0 if result['ok'] else 1

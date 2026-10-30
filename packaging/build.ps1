@@ -1,10 +1,10 @@
-param([string]$Python = 'python', [string]$Version = '0.5')
+param([string]$Python = 'python', [string]$Version = '0.6')
 $ErrorActionPreference = 'Stop'
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $OutputsRoot = Split-Path -Parent $ProjectRoot
 $WorkspaceRoot = Split-Path -Parent $OutputsRoot
 $BuildRoot = Join-Path $WorkspaceRoot 'work/photo-manager-build'
-$BundleName = '片集-Windows-' + $Version
+$BundleName = '洗衣机管理器-Windows-' + $Version
 $PreviousBundleName = $env:PIANJI_BUNDLE_NAME
 $env:PIANJI_BUNDLE_NAME = $BundleName
 Push-Location $ProjectRoot

@@ -23,6 +23,7 @@ class Catalog:
             CREATE TABLE IF NOT EXISTS import_members(activity_id TEXT NOT NULL,kind TEXT NOT NULL,sha256 TEXT NOT NULL,photo_id TEXT NOT NULL,PRIMARY KEY(activity_id,kind,sha256,photo_id));
             CREATE TABLE IF NOT EXISTS trashed_photos(photo_id TEXT PRIMARY KEY,payload TEXT NOT NULL,deleted_at TEXT DEFAULT CURRENT_TIMESTAMP);
             CREATE TABLE IF NOT EXISTS purges(photo_id TEXT PRIMARY KEY,payload TEXT NOT NULL,error TEXT);
+            CREATE TABLE IF NOT EXISTS deleted_activities(activity_id TEXT PRIMARY KEY);
             INSERT OR IGNORE INTO import_members SELECT p.activity_id,a.kind,a.sha256,p.id FROM assets a JOIN photos p ON p.id=a.photo_id WHERE a.kind IN ('jpeg','raw');
             ''')
 
@@ -44,13 +45,16 @@ class Catalog:
     def activity(self,name):
         safe_name(name)
         existing=self.rows('SELECT * FROM activities WHERE name=?',(name,))
-        if existing: return existing[0]
+        if existing:
+            if self.rows('SELECT activity_id FROM deleted_activities WHERE activity_id=?',(existing[0]['id'],)):
+                raise ValueError('此活动已移入回收站，请先恢复其中的照片，或使用其他活动名称')
+            return existing[0]
         ident=uid()
         with self.connect() as db: db.execute('INSERT INTO activities VALUES(?,?,?)',(ident,name,name))
         self.add_person(ident,'合照','group'); self.add_person(ident,'待分类','unclassified')
         return self.rows('SELECT * FROM activities WHERE id=?',(ident,))[0]
 
-    def activities(self): return self.rows('SELECT * FROM activities ORDER BY rowid DESC')
+    def activities(self): return self.rows('SELECT * FROM activities WHERE NOT EXISTS(SELECT 1 FROM deleted_activities d WHERE d.activity_id=activities.id) ORDER BY rowid DESC')
     def people(self,activity_id): return self.rows('SELECT * FROM people WHERE activity_id=? ORDER BY rowid',(activity_id,))
 
     def add_person(self,activity_id,name,role=None,embedding=None):

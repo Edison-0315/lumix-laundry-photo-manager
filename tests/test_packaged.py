@@ -7,9 +7,10 @@ import pytest
 @pytest.mark.skipif(not os.environ.get('PIANJI_BUNDLE'),reason='packaged artifact is checked explicitly after building')
 def test_packaged_manifest():
     root=Path(os.environ['PIANJI_BUNDLE'])
-    assert (root/'片集.exe').is_file()
+    assert (root/'洗衣机管理器.exe').is_file()
     resources=root/'_internal'
     assert (resources/'pianji/ui/index.html').is_file()
+    assert (resources/'pianji/ui/lumix.ico').is_file()
     assert (resources/'THIRD-PARTY-NOTICES.md').is_file()
     assert (resources/'licenses').is_dir()
     manifest=json.loads((resources/'models/manifest.json').read_text(encoding='utf-8'))

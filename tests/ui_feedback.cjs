@@ -53,7 +53,7 @@ const server=http.createServer((req,res)=>{
     await page.locator('.photo').first().click({button:'right'});await page.getByRole('menuitem',{name:'取消成片',exact:true}).click();await page.getByRole('button',{name:'确认',exact:true}).click();
     await page.waitForFunction(()=>test.calls.length===2);await page.waitForFunction(()=>document.querySelectorAll('.photo').length===0);
     assert.deepEqual(await page.evaluate(()=>test.calls.map(c=>c.value)),[true,false]);
-    await page.getByRole('button',{name:'SD 卡选片',exact:true}).click();await page.locator('.photo').first().click();await page.evaluate(()=>test.slow=true);
+    await page.getByRole('button',{name:'选片',exact:true}).click();await page.locator('.photo').first().click();await page.evaluate(()=>test.slow=true);
     await page.getByRole('button',{name:'选择来源',exact:true}).click();await page.locator('#taskbar:not([hidden])').waitFor();await page.locator('#cancel-task').click();
     await page.locator('#taskbar[hidden]').waitFor({state:'attached'});assert(await page.evaluate(()=>test.cancelled));
     assert.equal(await page.locator('#modal h2').textContent(),'读取已取消');
@@ -61,3 +61,4 @@ const server=http.createServer((req,res)=>{
     assert.deepEqual(errors,[]);console.log('Feedback UI PASS: folders; implicit library picker; direct finished/unlink; stage scope; cancel scan');
   }catch(e){await page.screenshot({path:path.resolve(__dirname,'../../../work/feedback-failure.png')});console.error('STATE',await page.evaluate(()=>({test,toast:document.querySelector('#toast').textContent,modal:document.querySelector('#modal').innerText})));throw e}finally{await browser.close();server.close()}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1});
+

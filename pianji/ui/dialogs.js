@@ -30,13 +30,17 @@ export async function importDialog(start,refresh,activityName=null){
     if(!await libraryDialog(refresh))return;
   }
   const ids=[...state.selected.sd];if(!ids.length)return;
-  const m=modal('导入所选照片');const name=field(m.content,'活动名称',activityName||state.activities.find(a=>a.id===state.activity)?.name||new Date().toLocaleDateString('sv-SE')+'_漫展');
-  const list=el('datalist');list.id='activity-names';state.activities.forEach(a=>{const o=el('option');o.value=a.name;list.append(o)});m.content.append(list);name.setAttribute('list','activity-names');
-  m.content.append(button('新建活动',()=>newActivityDialog(async activity=>{await refresh();await importDialog(start,refresh,activity.name)},name.value),'outline'),el('p','small muted','可从名称建议选择已有活动，或输入新名称；也可点“新建活动”先创建。'));
+  const m=modal('导入所选照片'),labelActivity=el('label','','活动名称'),name=el('select');
+  name.setAttribute('aria-label','活动名称');
+  const placeholder=el('option','','请选择活动');placeholder.value='';placeholder.disabled=true;name.append(placeholder);
+  state.activities.forEach(a=>{const o=el('option','',a.name);o.value=a.name;name.append(o)});labelActivity.append(name);m.content.append(labelActivity);
+  name.value=activityName||state.activities.find(a=>a.id===state.activity)?.name||state.activities[0]?.name||'';
+  m.content.append(button('新建活动',()=>newActivityDialog(async activity=>{await refresh();await importDialog(start,refresh,activity.name)}),'outline'),el('p','small muted',state.activities.length?'选择要导入的活动，或新建一个活动。':'还没有活动，请先点“新建活动”。'));
   const label=el('label','','导入格式'),select=el('select');for(const [value,text]of[['both','JPEG 和 RAW'],['jpeg','仅 JPEG'],['raw','仅 RAW']]){const o=el('option','',text);o.value=value;select.append(o)}label.append(select);m.content.append(label);
   select.value=state.format==='all'?'both':state.format;
-  const summary=el('div','notice');const update=()=>{const groups=state.sourcePhotos.filter(p=>ids.includes(p.id)),files=groups.flatMap(assets).filter(a=>select.value==='both'||a.kind===select.value||select.value==='raw'&&a.kind==='xmp');summary.textContent=`已选 ${ids.length} 张照片，预计 ${files.length} 个文件。\n目标：${state.settings.library}\\${name.value}\\待分类\\选出原片\n从来源复制，源文件保留；导入后可识别人脸。`};name.oninput=update;select.onchange=update;update();m.content.append(summary);
-  m.submit('开始导入',()=>start('import_selected',state.scanId,ids,name.value,select.value));
+  const summary=el('div','notice');
+  const submit=m.submit('开始导入',()=>{if(!name.value)throw new Error('请先选择或新建活动');return start('import_selected',state.scanId,ids,name.value,select.value)});
+  const update=()=>{const groups=state.sourcePhotos.filter(p=>ids.includes(p.id)),files=groups.flatMap(assets).filter(a=>select.value==='both'||a.kind===select.value||select.value==='raw'&&a.kind==='xmp');summary.textContent=`已选 ${ids.length} 张照片，预计 ${files.length} 个文件。\n目标：${name.value?state.settings.library+'\\'+name.value+'\\待分类\\选出原片':'请先选择或新建活动'}\n从来源复制，源文件保留；导入后可识别人脸。`;submit.disabled=!name.value};name.onchange=update;select.onchange=update;update();m.content.append(summary);
 }
 export function newActivityDialog(done,initial=''){
   const m=modal('新建活动'),name=field(m.content,'活动名称',initial);
@@ -45,6 +49,11 @@ export function newActivityDialog(done,initial=''){
 export function deletePeopleDialog(ids,start){
   if(!ids.length)return;
   confirmAction('删除人物分类',`删除 ${ids.length} 个人物分类，并将其全部原片和成片移回同活动的“待分类”。保留照片、修图阶段和成片关联；回收站中该人物照片恢复后也归入待分类。`,()=>start('delete_people',ids));
+}
+export function deleteActivityDialog(id,start){
+  const activity=state.activities.find(a=>a.id===id);if(!activity)return;
+  const count=state.photos.filter(p=>p.activity_id===id).length;
+  confirmAction('删除活动',`将“${activity.name}”的 ${count} 张照片及关联原片、成片和保留版本移入回收站，并从活动列表移除。恢复其中任意照片时，活动会重新出现。SD 来源和活动文件夹中的其他文件保留。`,()=>start('delete_activity',id));
 }
 export function deleteDialog(ids,start){
   if(!ids.length)return;
@@ -59,7 +68,7 @@ export async function trashDialog(start,selectedIds=[]){
   const list=el('div','trash-list');
   const checks=new Map();
   const run=async(name,ids)=>{const snap=await start(name,ids);if(snap?.status==='succeeded')await trashDialog(start)};
-  for(const p of rows){const row=el('div','library-row'),info=button('',e=>{if(e.detail>1)return;chosen.has(p.id)?chosen.delete(p.id):chosen.add(p.id);sync()},'trash-choice');info.setAttribute('aria-label','选择 '+p.stem);info.append(el('strong','',p.stem),el('span','small muted',(state.activities.find(a=>a.id===p.activity_id)?.name||'活动')+' · '+(p.file_count??assets(p).length)+' 个关联文件'+(p.purge_pending?' · 永久删除未完成，请重试':p.missing?' · 部分文件缺失':'')));checks.set(p.id,info);
+  for(const p of rows){const row=el('div','library-row'),info=button('',e=>{if(e.detail>1)return;chosen.has(p.id)?chosen.delete(p.id):chosen.add(p.id);sync()},'trash-choice');info.setAttribute('aria-label','选择 '+p.stem);info.append(el('strong','',p.stem),el('span','small muted',(p.activity_name||state.activities.find(a=>a.id===p.activity_id)?.name||'活动')+' · '+(p.file_count??assets(p).length)+' 个关联文件'+(p.purge_pending?' · 永久删除未完成，请重试':p.missing?' · 部分文件缺失':'')));checks.set(p.id,info);
     const restore=button('恢复',async()=>{try{await run('restore_photos',[p.id])}catch(e){m.err.textContent=e.message}},'outline');restore.disabled=Boolean(p.purge_pending);row.append(info,restore);list.append(row)}
   m.content.append(list);m.buttons.replaceChildren(button('关闭',()=>m.dialog.close()));
   function confirmDelete(ids){

@@ -65,7 +65,7 @@ class LibraryLock:
                 import fcntl
                 fcntl.flock(stream.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
         except OSError as e:
-            stream.close();raise ValueError('此照片库已在另一个片集窗口中打开，请关闭该窗口后重试') from e
+            stream.close();raise ValueError('此照片库已在另一个洗衣机管理器窗口中打开，请关闭该窗口后重试') from e
         self._finalizer=weakref.finalize(self,_release,stream)
 
     def close(self): self._finalizer()

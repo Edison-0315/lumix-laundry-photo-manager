@@ -3,7 +3,7 @@ import {state,$,selected,basePhotos,visible,current,assets,el,button,toast,error
 import {renderGallery,syncSelection,setThumbnailSize,onInspector,onFolder,openViewer,setupViewer,updatePhotoThumbnail} from './gallery.js';
 import {preview,invalidateLibraryPreviews} from './previews.js';
 import {setupSelection} from './selection.js';
-import {settingsDialog,importDialog,assignDialog,newPersonDialog,managePeopleDialog,confirmAction,resultDialog,deleteDialog,trashDialog,newActivityDialog,deletePeopleDialog} from './dialogs.js';
+import {settingsDialog,importDialog,assignDialog,newPersonDialog,managePeopleDialog,confirmAction,resultDialog,deleteDialog,trashDialog,newActivityDialog,deletePeopleDialog,deleteActivityDialog} from './dialogs.js';
 import {libraryDialog} from './library-manager.js';
 import {setupContextMenu,commandMenu} from './context-menu.js';
 import {bindChoice,choices,syncChoices,clearChoices,folderScope,selectableFolderKeys} from './choice-list.js';
@@ -33,7 +33,7 @@ function createActivity(){if(!state.settings.library_available){toast('请先创
 function render(){
   const isSD=state.view==='sd';
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));
-  $('#title').textContent=isSD?'SD 卡选片':state.activities.find(a=>a.id===state.activity)?.name||'照片库';
+  $('#title').textContent=isSD?'选片':state.activities.find(a=>a.id===state.activity)?.name||'照片库';
   $('#subtitle').textContent=isSD?(state.source?.path||'选择SD卡或照片文件夹，在这里查看和选片'):'原片与成片关联管理 · 人物和修图阶段分别整理';
   $('#context').textContent=isSD?'浏览来源 · 选择后导入':'照片库 · '+(state.people.find(p=>p.id===state.person)?.name||'全部人物');
   $('#choose-source').hidden=!isSD;$('#classify').hidden=isSD;$('#classify').disabled=!state.activity||state.busy;
@@ -67,9 +67,19 @@ async function renderInspector(){
   const box=$('#inspector'),p=current(),rev=++inspectorRevision;
   box.replaceChildren();
   if(!p){const empty=el('div','empty');empty.append(el('span','','选择一张照片'),el('small','','单击选择 · 双击查看大图\n拖动可批量选择'));box.append(empty);return}
-  const thumb=el('div','large-thumb');thumb.append(el('span','muted small','正在读取…'));thumb.onclick=()=>openViewer(p.id);box.append(thumb,el('div','file-title',p.stem));
+  const thumb=el('div','large-thumb'),badge=el('span','format-chip',[...new Set(assets(p).filter(a=>a.kind==='jpeg'||a.kind==='raw').map(a=>a.kind==='raw'?'RAW':'JPG'))].join(' + '));badge.setAttribute('aria-label','文件格式 '+badge.textContent);
+  const showThumb=im=>thumb.replaceChildren(im,badge);showThumb(el('span','muted small','正在读取…'));thumb.onclick=()=>openViewer(p.id);box.append(thumb,el('div','file-title',p.stem));
   const dl=el('dl');const add=(k,v)=>dl.append(el('dt','',k),el('dd','',v));
-  add('拍摄日期',p.captured_at?.replace('T',' ')||'未知');add('文件格式',[...new Set(assets(p).filter(a=>a.kind!=='xmp').map(a=>({jpeg:'JPEG',raw:'RAW',export:'成片'}[a.kind])))].join(' / '));
+  const fields=new Map();for(const label of ['文件大小','拍摄日期','相机型号','镜头焦段','镜头型号','相机参数']){add(label,'读取中…');fields.set(label,dl.lastElementChild)}
+  const fillDetails=details=>{
+    const size=value=>value==null?'不可用':value<1024?value+' B':value<1048576?(value/1024).toFixed(1)+' KB':(value/1048576).toFixed(1).replace(/\.0$/,'')+' MB';
+    const files=(details.files||[]).map(f=>({jpeg:'JPG',raw:'RAW',export:'成片',xmp:'XMP'}[f.kind]||f.name)+' '+size(f.bytes));
+    fields.get('文件大小').textContent=(details.total_bytes!=null?size(details.total_bytes)+(files.length>1?'（合计）':''):'未完整读取')+(files.length>1?'\n'+files.join('\n'):'');
+    fields.get('拍摄日期').textContent=details.captured_at||p.captured_at?.replace('T',' ')||'未记录';
+    fields.get('相机型号').textContent=details.camera||'未记录';fields.get('镜头焦段').textContent=details.focal_length||'未记录';fields.get('镜头型号').textContent=details.lens||'未记录';
+    fields.get('相机参数').textContent=[details.aperture,details.shutter,details.iso?'ISO '+details.iso:null,details.exposure_bias].filter(Boolean).join(' · ')||'未记录';
+  };
+  api('get_photo_details',p.id,state.view==='sd'?state.scanId:null).then(details=>{if(rev===inspectorRevision)fillDetails(details)}).catch(()=>{if(rev===inspectorRevision)fillDetails({})});
   if(state.view==='library'){add('人物',state.people.find(person=>person.id===p.person_id)?.name||'待分类');add('修图阶段',p.edited?'已修原片':'选出原片');if(p.opened_at)add('PS请求',p.opened_at.slice(0,16).replace('T',' '));}
   box.append(dl);
   if(p.error||p.missing)box.append(el('p','warning small',p.missing?'部分文件缺失，请定位原文件后恢复。':p.error));
@@ -93,7 +103,7 @@ async function renderInspector(){
     box.querySelectorAll('button').forEach(b=>{b.dataset.mutation='true';if(state.busy)b.disabled=true});
   }
   const details=el('details');details.append(el('summary','muted small','文件位置'));for(const a of assets(p))details.append(el('p','path',a.path));box.append(el('div','divider'),details);
-  try{const result=await preview(p,state.view==='library'&&state.stage==='exports'?'export-thumb':'thumb',state.view==='sd'?state.scanId:null);if(rev!==inspectorRevision)return;thumb.replaceChildren();if(result.url){const im=el('img');im.src=result.url;im.alt=p.stem;thumb.append(im);updatePhotoThumbnail(p.id,result.url)}else thumb.append(el('span','muted small','无法预览'))}catch{if(rev===inspectorRevision)thumb.textContent='无法预览'}
+  try{const result=await preview(p,state.view==='library'&&state.stage==='exports'?'export-thumb':'thumb',state.view==='sd'?state.scanId:null);if(rev!==inspectorRevision)return;if(result.url){const im=el('img');im.src=result.url;im.alt=p.stem;showThumb(im);updatePhotoThumbnail(p.id,result.url)}else showThumb(el('span','muted small','无法预览'))}catch{if(rev===inspectorRevision)showThumb(el('span','muted small','无法预览'))}
 }
 async function start(name,...args){
   if(state.busy)throw new Error('请等待当前任务完成');
@@ -162,7 +172,8 @@ function sidebarMenu(e){
       {name:'删除人物分类…',fn:()=>deletePeopleDialog(ids,start),disabled:state.busy||!people.length||people.some(p=>p.role),danger:true}]);
   }else commandMenu(e.clientX,e.clientY,'活动',[
     {name:'新建活动',fn:createActivity,disabled:state.busy||!state.settings.library_available},
-    {name:'打开活动',fn:()=>openActivity(node.dataset.activity),disabled:!node}]);
+    {name:'打开活动',fn:()=>openActivity(node.dataset.activity),disabled:!node},
+    {name:'删除活动…',fn:()=>deleteActivityDialog(node.dataset.activity,start),disabled:state.busy||!node,danger:true}]);
 }
 document.addEventListener('contextmenu',sidebarMenu);
 document.addEventListener('keydown',e=>{if((e.key==='ContextMenu'||e.shiftKey&&e.key==='F10')&&e.target.closest('#people-section,#activities-section')){const r=e.target.getBoundingClientRect();sidebarMenu({target:e.target,clientX:r.left,clientY:r.bottom,preventDefault:()=>e.preventDefault()})}});

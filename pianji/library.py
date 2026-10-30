@@ -26,6 +26,12 @@ class Library:
         with self.lock:
             self._ready();safe_name(name)
             if any(a['name'].casefold()==name.casefold() for a in self.catalog.activities()):raise ValueError('同名活动已存在，请选择已有活动')
+            deleted=self.catalog.rows('SELECT a.* FROM activities a JOIN deleted_activities d ON d.activity_id=a.id WHERE lower(a.name)=lower(?)',(name,))
+            if deleted:
+                if self.catalog.rows('SELECT id FROM photos WHERE activity_id=?',(deleted[0]['id'],)):
+                    raise ValueError('此活动仍有照片在回收站，请先恢复照片或使用其他名称')
+                self.journal.execute('recreate_activity',[],[('DELETE FROM deleted_activities WHERE activity_id=?',(deleted[0]['id'],))])
+                return deleted[0]
             folder=inside(self.root,self.root/name);folder.mkdir(exist_ok=False)
             try:return self.catalog.activity(name)
             except Exception:
@@ -240,12 +246,26 @@ class Library:
                     sha=digest(src);changes.append({'src':str(src),'dst':str(dst),'sha256':sha,'move':True})
                 sql.append(('UPDATE detached_exports SET path=?,sha256=? WHERE id=?',(str(dst),sha,a['id'])))
             sql.append(('DELETE FROM trashed_photos WHERE photo_id=?',(photo['id'],)))
+            sql.append(('DELETE FROM deleted_activities WHERE activity_id=?',(photo['activity_id'],)))
             return self.journal.execute('restore',changes,sql,{'photo_id':photo['id']})
         return self._batch(ids,apply,cancel,progress,include_trashed=True)
 
     def purge_trash(self,ids,cancel=lambda:False,progress=lambda n,t,m:None):
         from .permanent import purge
         return purge(self,ids,cancel,progress)
+
+    def delete_activity(self,activity_id,cancel=lambda:False,progress=lambda n,t,m:None):
+        with self.lock:
+            self._ready()
+            if not any(a['id']==activity_id for a in self.catalog.activities()):raise ValueError('活动不存在或已删除')
+            ids=[p['id'] for p in self.catalog.photos(activity_id)]
+            result=self.trash_photos(ids,cancel,progress)
+            result['deleted_activity']=None
+            if cancel():result['cancelled']=True
+            if not result['errors'] and not result['cancelled']:
+                self.journal.execute('delete_activity',[],[('INSERT INTO deleted_activities(activity_id) VALUES(?)',(activity_id,))])
+                result['deleted_activity']=activity_id
+            return result
 
     def link_export(self,photo_id,file):
         with self.lock:

@@ -179,6 +179,10 @@ class Bridge:
         self._check_switch();return self._library().create_activity(name)
 
     @api
+    def delete_activity(self,activity_id):
+        lib=self._library();return self._submit('删除活动',lambda c,p:lib.delete_activity(activity_id,c,p))
+
+    @api
     def list_people(self,activity_id): return self._library().catalog.people(activity_id)
 
     @api
@@ -187,6 +191,8 @@ class Bridge:
         for p in photos:
             p['missing']=any(not Path(a['path']).is_file() for a in p['assets'])
             if filters.get('trashed'):
+                activity=lib.catalog.rows('SELECT name FROM activities WHERE id=?',(p['activity_id'],))
+                p['activity_name']=activity[0]['name'] if activity else '活动'
                 p['purge_pending']=bool(lib.catalog.rows('SELECT photo_id FROM purges WHERE photo_id=?',(p['id'],)))
                 p['file_count']=len(p['assets'])+lib.catalog.rows('SELECT count(*) AS n FROM detached_exports WHERE photo_id=?',(p['id'],))[0]['n']
         return photos
@@ -222,6 +228,22 @@ class Bridge:
         result=self._previews.submit(read).result()
         if result.error: return {'url':None,'error':result.error}
         return {'url':'data:image/jpeg;base64,'+base64.b64encode(result.content).decode(),'error':None}
+
+    @api
+    def get_photo_details(self,photo_id,scan_id=None):
+        from .metadata import photo_details
+        if scan_id:
+            group=self._scans.get(scan_id,{}).get(photo_id)
+            if not group:raise ValueError('来源照片已失效，请重新扫描')
+            read=lambda:photo_details([asdict(a) for a in group.files],group.captured_at)
+        else:
+            lib=self._library()
+            def read():
+                with lib.journal.access.read():
+                    lib._ready();photo=lib.catalog.photo(photo_id)
+                    for a in photo['assets']:inside(lib.root,a['path'])
+                    return photo_details(photo['assets'],photo['captured_at'])
+        return self._previews.submit(read).result()
 
     @api
     def import_selected(self,scan_id,photo_ids,activity,formats):

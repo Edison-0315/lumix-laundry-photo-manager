@@ -55,7 +55,7 @@ const server=http.createServer((req,res)=>{
     await page.mouse.move(gallery.x+100,gallery.y+100);await page.keyboard.down('Control');await page.mouse.wheel(0,-80);await page.keyboard.up('Control');
     assert.equal(await page.locator('#thumb-size').inputValue(),'240');
     const libraryCount=await page.locator('.photo.checked').count();
-    await page.getByRole('button',{name:'SD 卡选片',exact:true}).click();
+    await page.getByRole('button',{name:'选片',exact:true}).click();
     await page.getByRole('button',{name:'选择来源',exact:true}).click();
     await page.locator('.photo').first().waitFor();
     assert.equal(await page.locator('.photo.checked').count(),0);
@@ -67,3 +67,4 @@ const server=http.createServer((req,res)=>{
     console.log('UI PASS: real modules; literal filenames; click/Ctrl/Shift/double-click; 80–720 zoom; marquee; isolated selections');
   }finally{await browser.close();server.close()}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1});
+
