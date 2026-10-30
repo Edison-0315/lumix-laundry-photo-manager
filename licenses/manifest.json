@@ -1,0 +1,264 @@
+[
+  {
+    "name": "altgraph",
+    "version": "0.17.5",
+    "license": "MIT",
+    "files": [
+      "altgraph\\altgraph-0.17.5.dist-info_LICENSE"
+    ]
+  },
+  {
+    "name": "bottle",
+    "version": "0.13.4",
+    "license": "MIT",
+    "files": [
+      "bottle\\bottle-0.13.4.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "cffi",
+    "version": "2.1.1",
+    "license": "MIT-0",
+    "files": [
+      "cffi\\cffi-2.1.1.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "clr_loader",
+    "version": "0.3.1",
+    "license": null,
+    "files": [
+      "clr_loader\\clr_loader-0.3.1.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "colorama",
+    "version": "0.4.6",
+    "license": null,
+    "files": [
+      "colorama\\colorama-0.4.6.dist-info_licenses_LICENSE.txt"
+    ]
+  },
+  {
+    "name": "ExifRead",
+    "version": "3.5.1",
+    "license": "Copyright (c) 2002-2007 Gene Cash\nCopyright (c) 2007-2025 Ianaré Sévi and contributors\n\nRedistribution and use in source and binary forms, with or without\nmodification, are permitted provided that the following conditions\nare met:\n\n 1. Redistributions of source code must retain the above copyright\n    notice, this list of conditions and the following disclaimer.\n\n 2. Redistributions in binary form must reproduce the above\n    copyright notice, this list of conditions and the following\n    disclaimer in the documentation and/or other materials provided\n    with the distribution.\n\n 3. Neither the name of the authors nor the names of its contributors\n    may be used to endorse or promote products derived from this\n    software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS\n\"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT\nLIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR\nA PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT\nOWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,\nSPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT\nLIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,\nDATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY\nTHEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE\nOF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n",
+    "files": [
+      "ExifRead\\exifread-3.5.1.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "iniconfig",
+    "version": "2.3.1",
+    "license": "MIT",
+    "files": [
+      "iniconfig\\iniconfig-2.3.1.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "numpy",
+    "version": "2.5.4",
+    "license": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+    "files": [
+      "numpy\\numpy-2.5.4.dist-info_licenses_LICENSE.txt",
+      "numpy\\numpy_libdivide_LICENSE.txt",
+      "numpy\\common_pythoncapi-compat_COPYING",
+      "numpy\\src_highway_LICENSE",
+      "numpy\\src_multiarray_dragon4_LICENSE.txt",
+      "numpy\\npysort_x86-simd-sort_LICENSE.md",
+      "numpy\\umath_svml_LICENSE",
+      "numpy\\fft_pocketfft_LICENSE.md",
+      "numpy\\linalg_lapack_lite_LICENSE.txt",
+      "numpy\\numpy_ma_LICENSE",
+      "numpy\\numpy_random_LICENSE.md",
+      "numpy\\src_distributions_LICENSE.md",
+      "numpy\\src_mt19937_LICENSE.md",
+      "numpy\\src_pcg64_LICENSE.md",
+      "numpy\\src_philox_LICENSE.md",
+      "numpy\\src_sfc64_LICENSE.md",
+      "numpy\\src_splitmix64_LICENSE.md",
+      "numpy\\numpy_random_LICENSE.txt",
+      "numpy\\numpy_ma_LICENSE",
+      "numpy\\numpy_random_LICENSE.md"
+    ]
+  },
+  {
+    "name": "opencv-python-headless",
+    "version": "4.13.0.92",
+    "license": "Apache 2.0",
+    "files": [
+      "opencv-python-headless\\cv2_LICENSE-3RD-PARTY.txt",
+      "opencv-python-headless\\cv2_LICENSE.txt",
+      "opencv-python-headless\\cv2_data_haarcascade_license_plate_rus_16stages.xml",
+      "opencv-python-headless\\opencv_python_headless-4.13.0.92.dist-info_LICENSE-3RD-PARTY.txt",
+      "opencv-python-headless\\opencv_python_headless-4.13.0.92.dist-info_LICENSE.txt"
+    ]
+  },
+  {
+    "name": "packaging",
+    "version": "26.3",
+    "license": "Apache-2.0 OR BSD-2-Clause",
+    "files": [
+      "packaging\\packaging-26.3.dist-info_licenses_LICENSE",
+      "packaging\\packaging-26.3.dist-info_licenses_LICENSE.APACHE",
+      "packaging\\packaging-26.3.dist-info_licenses_LICENSE.BSD",
+      "packaging\\packaging_licenses___init__.py",
+      "packaging\\licenses___pycache_____init__.cpython-312.pyc",
+      "packaging\\licenses___pycache____spdx.cpython-312.pyc",
+      "packaging\\packaging_licenses__spdx.py"
+    ]
+  },
+  {
+    "name": "pefile",
+    "version": "2024.8.26",
+    "license": "MIT",
+    "files": [
+      "pefile\\pefile-2024.8.26.dist-info_LICENSE"
+    ]
+  },
+  {
+    "name": "pillow",
+    "version": "13.0.0",
+    "license": "MIT-CMU",
+    "files": [
+      "pillow\\pillow-13.0.0.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "pip",
+    "version": "25.0.1",
+    "license": "MIT",
+    "files": [
+      "pip\\pip-25.0.1.dist-info_LICENSE.txt",
+      "pip\\packaging_licenses___init__.py",
+      "pip\\licenses___pycache_____init__.cpython-312.pyc",
+      "pip\\licenses___pycache____spdx.cpython-312.pyc",
+      "pip\\packaging_licenses__spdx.py"
+    ]
+  },
+  {
+    "name": "pluggy",
+    "version": "1.7.0",
+    "license": "MIT",
+    "files": [
+      "pluggy\\pluggy-1.7.0.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "proxy_tools",
+    "version": "0.1.0",
+    "license": "MIT",
+    "files": []
+  },
+  {
+    "name": "pycparser",
+    "version": "3.12",
+    "license": "BSD-3-Clause",
+    "files": [
+      "pycparser\\pycparser-3.12.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "Pygments",
+    "version": "2.21.0",
+    "license": "BSD-2-Clause",
+    "files": [
+      "Pygments\\pygments-2.21.0.dist-info_licenses_AUTHORS",
+      "Pygments\\pygments-2.21.0.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "pyinstaller",
+    "version": "6.22.3",
+    "license": "GPLv2-or-later with a special exception which allows to use PyInstaller to build and distribute non-free programs (including commercial ones)",
+    "files": [
+      "pyinstaller\\pyinstaller-6.22.3.dist-info_licenses_COPYING.txt"
+    ]
+  },
+  {
+    "name": "pyinstaller-hooks-contrib",
+    "version": "2026.9",
+    "license": null,
+    "files": [
+      "pyinstaller-hooks-contrib\\pyinstaller_hooks_contrib-2026.9.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "pytest",
+    "version": "9.1.1",
+    "license": "MIT",
+    "files": [
+      "pytest\\pytest-9.1.1.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "pythonnet",
+    "version": "3.2.1",
+    "license": "MIT",
+    "files": [
+      "pythonnet\\pythonnet-3.2.1.dist-info_licenses_AUTHORS.md",
+      "pythonnet\\pythonnet-3.2.1.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "pywebview",
+    "version": "6.2.1",
+    "license": "BSD 3-Clause License\n\nCopyright (c) 2014-2017, Roman Sirokov\nAll rights reserved.\n\nRedistribution and use in source and binary forms, with or without\nmodification, are permitted provided that the following conditions are met:\n\n* Redistributions of source code must retain the above copyright notice, this\n  list of conditions and the following disclaimer.\n\n* Redistributions in binary form must reproduce the above copyright notice,\n  this list of conditions and the following disclaimer in the documentation\n  and/or other materials provided with the distribution.\n\n* Neither the name of the copyright holder nor the names of its\n  contributors may be used to endorse or promote products derived from\n  this software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\nAND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\nIMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\nDISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE\nFOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL\nDAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR\nSERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER\nCAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,\nOR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE\nOF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n",
+    "files": [
+      "pywebview\\pywebview-6.2.1.dist-info_licenses_LICENSE"
+    ]
+  },
+  {
+    "name": "pywin32-ctypes",
+    "version": "0.2.3",
+    "license": "BSD-3-Clause",
+    "files": [
+      "pywin32-ctypes\\pywin32_ctypes-0.2.3.dist-info_LICENSE.txt"
+    ]
+  },
+  {
+    "name": "rawpy",
+    "version": "0.27.1",
+    "license": "MIT",
+    "files": [
+      "rawpy\\rawpy-0.27.1.dist-info_licenses_LICENSE",
+      "rawpy\\rawpy-0.27.1.dist-info_licenses_LICENSE.LibRaw"
+    ]
+  },
+  {
+    "name": "setuptools",
+    "version": "84.2.1",
+    "license": "MIT",
+    "files": [
+      "setuptools\\setuptools-84.2.1.dist-info_licenses_LICENSE",
+      "setuptools\\_vendor_autocommand-2.2.2.dist-info_LICENSE",
+      "setuptools\\_vendor_backports.tarfile-1.2.0.dist-info_LICENSE",
+      "setuptools\\importlib_metadata-8.7.1.dist-info_licenses_LICENSE",
+      "setuptools\\_vendor_jaraco.text-4.0.0.dist-info_LICENSE",
+      "setuptools\\jaraco_context-6.1.0.dist-info_licenses_LICENSE",
+      "setuptools\\jaraco_functools-4.4.0.dist-info_licenses_LICENSE",
+      "setuptools\\more_itertools-10.8.0.dist-info_licenses_LICENSE",
+      "setuptools\\packaging-26.3.dist-info_licenses_LICENSE",
+      "setuptools\\packaging-26.3.dist-info_licenses_LICENSE.APACHE",
+      "setuptools\\packaging-26.3.dist-info_licenses_LICENSE.BSD",
+      "setuptools\\packaging_licenses___init__.py",
+      "setuptools\\licenses___pycache_____init__.cpython-312.pyc",
+      "setuptools\\licenses___pycache____spdx.cpython-312.pyc",
+      "setuptools\\packaging_licenses__spdx.py",
+      "setuptools\\platformdirs-4.4.0.dist-info_licenses_LICENSE",
+      "setuptools\\tomli-2.4.0.dist-info_licenses_LICENSE",
+      "setuptools\\wheel-0.46.3.dist-info_licenses_LICENSE.txt",
+      "setuptools\\zipp-3.23.0.dist-info_licenses_LICENSE",
+      "setuptools\\setuptools_config_NOTICE",
+      "setuptools\\config__validate_pyproject_NOTICE"
+    ]
+  },
+  {
+    "name": "typing_extensions",
+    "version": "4.16.0",
+    "license": "PSF-2.0",
+    "files": [
+      "typing_extensions\\typing_extensions-4.16.0.dist-info_licenses_LICENSE"
+    ]
+  }
+]
