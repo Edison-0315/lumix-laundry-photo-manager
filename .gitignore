@@ -6,3 +6,5 @@ models/*.onnx
 build/
 dist/
 .taste-skill/
+.venv/
+node_modules/

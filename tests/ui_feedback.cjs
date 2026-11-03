@@ -1,3 +1,4 @@
+const artifact=require('./helpers/artifact.cjs');
 const {chromium}=require('playwright');
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert');
 const root=path.resolve(__dirname,'../pianji/ui');
@@ -59,6 +60,6 @@ const server=http.createServer((req,res)=>{
     assert.equal(await page.locator('#modal h2').textContent(),'读取已取消');
     assert.equal(await page.locator('.photo.checked').count(),1);assert.equal(await page.locator('#subtitle').textContent(),'C:/SD');
     assert.deepEqual(errors,[]);console.log('Feedback UI PASS: folders; implicit library picker; direct finished/unlink; stage scope; cancel scan');
-  }catch(e){await page.screenshot({path:path.resolve(__dirname,'../../../work/feedback-failure.png')});console.error('STATE',await page.evaluate(()=>({test,toast:document.querySelector('#toast').textContent,modal:document.querySelector('#modal').innerText})));throw e}finally{await browser.close();server.close()}
+  }catch(e){await page.screenshot({path:artifact('feedback-failure.png')});console.error('STATE',await page.evaluate(()=>({test,toast:document.querySelector('#toast').textContent,modal:document.querySelector('#modal').innerText})));throw e}finally{await browser.close();server.close()}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1});
 

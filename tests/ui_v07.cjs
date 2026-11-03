@@ -1,3 +1,4 @@
+const artifact=require('./helpers/artifact.cjs');
 const {chromium}=require('playwright'),http=require('http'),fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'../pianji/ui');
 const server=http.createServer((req,res)=>{const p=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);if(!p.startsWith(root+path.sep)){res.writeHead(403).end();return}try{res.setHeader('Content-Type',{'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'}[path.extname(p)]||'text/plain');res.end(fs.readFileSync(p))}catch{res.writeHead(404).end()}});
@@ -16,9 +17,9 @@ const server=http.createServer((req,res)=>{const p=path.resolve(root,'.'+new URL
   const confirm=p.getByRole('button',{name:'移到系统回收站',exact:true}),name=p.getByLabel('输入照片库名称确认删除',{exact:true});assert.ok(await confirm.isDisabled());await name.fill('错误');assert.ok(await confirm.isDisabled());await p.locator('#modal').getByRole('button',{name:'返回',exact:true}).click();assert.equal(await p.evaluate(()=>test.deletes.length),0);
   await p.getByRole('button',{name:'删除照片库…',exact:true}).click();await name.fill('照片库');await confirm.click();await p.waitForFunction(()=>test.deletes.length===1);await p.waitForFunction(()=>document.querySelector('#modal')?.innerText.includes('还没有照片库'));assert.deepEqual(await p.evaluate(()=>test.deletes),[{token:'token',name:'照片库'}]);await p.getByRole('button',{name:'关闭',exact:true}).click();
   assert.ok(await p.locator('[data-view=sd] svg').count());assert.ok(await p.locator('#choose-library svg').count());assert.ok(await p.locator('.empty .empty-icon svg').count());
-  assert.match(await p.locator('.sidebar').evaluate(el=>getComputedStyle(el).backdropFilter),/blur/);assert.ok(parseInt(await p.locator('.sidebar').evaluate(el=>getComputedStyle(el).borderRadius))>=16);assert.ok(parseInt(await p.locator('#modal').evaluate(el=>getComputedStyle(el).borderRadius))>=18);
-  await p.screenshot({path:path.resolve(__dirname,'../../../work/v07-glass-1440.png')});await p.setViewportSize({width:1040,height:720});await p.screenshot({path:path.resolve(__dirname,'../../../work/v07-glass-1040.png')});
+  const sidebarMaterial=await p.locator('.sidebar>.lens-backdrop').count()?'.sidebar>.lens-backdrop':'.sidebar';assert.match(await p.locator(sidebarMaterial).evaluate(el=>getComputedStyle(el).backdropFilter),/blur/);assert.ok(parseInt(await p.locator('.sidebar').evaluate(el=>getComputedStyle(el).borderRadius))>=16);assert.ok(parseInt(await p.locator('#modal').evaluate(el=>getComputedStyle(el).borderRadius))>=18);
+  await p.screenshot({path:artifact('v07-glass-1440.png')});await p.setViewportSize({width:1040,height:720});await p.screenshot({path:artifact('v07-glass-1040.png')});
   assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);console.log('PASS v0.7: cleanup entry; actual-library delete preview/name gate/cancel/refresh; SVG icons; rounded glass; desktop widths');
- }catch(e){await p.screenshot({path:path.resolve(__dirname,'../../../work/v07-ui-failure.png')});throw e}finally{await browser.close();server.close()}
+ }catch(e){await p.screenshot({path:artifact('v07-ui-failure.png')});throw e}finally{await browser.close();server.close()}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1});
 

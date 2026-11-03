@@ -1,3 +1,4 @@
+const artifact=require('./helpers/artifact.cjs');
 const {chromium}=require('playwright'),http=require('http'),fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'../pianji/ui');
 const server=http.createServer((req,res)=>{const p=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);if(!p.startsWith(root+path.sep)){res.writeHead(403).end();return}try{res.setHeader('Content-Type',{'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.ico':'image/x-icon'}[path.extname(p)]||'text/plain');res.end(fs.readFileSync(p))}catch{res.writeHead(404).end()}});
@@ -27,10 +28,10 @@ const server=http.createServer((req,res)=>{const p=path.resolve(root,'.'+new URL
   const chip=p.locator('.large-thumb .format-chip');assert.match(await chip.innerText(),/JPG.*RAW/);assert.match(await chip.evaluate(el=>getComputedStyle(el).backdropFilter),/blur/);assert.equal(await chip.evaluate(el=>getComputedStyle(el).bottom),'10px');
   assert.equal(await p.title(),'洗衣机管理器');assert.match(await p.locator('.brand').innerText(),/洗衣机管理器/);assert.equal(await p.locator('#settings').innerText(),'');assert.equal(await p.getByRole('button',{name:'设置',exact:true}).count(),1);assert.equal(await p.locator('#settings svg').count(),1);assert.equal(await p.locator('#trash svg').count(),1);assert.equal(await p.locator('[data-view=sd]').innerText(),'选片');
   const red=await p.locator('#trash').evaluate(el=>getComputedStyle(el).color);assert.notEqual(red,'rgb(166, 169, 179)');
-  await p.screenshot({path:path.resolve(__dirname,'../../../work/v06-ui-details.png')});
+  await p.screenshot({path:artifact('v06-ui-details.png')});
   await p.locator('#activities [data-activity=act]').click({button:'right'});await p.getByRole('menuitem',{name:'删除活动…',exact:true}).click();assert.match(await p.locator('#modal').innerText(),/回收站/);await p.getByRole('button',{name:'取消',exact:true}).click();assert.equal(await p.evaluate(()=>test.deletes.length),0);
   await p.locator('#activities [data-activity=act]').click({button:'right'});await p.getByRole('menuitem',{name:'删除活动…',exact:true}).click();await p.getByRole('button',{name:'确认',exact:true}).click();await p.waitForFunction(()=>test.deletes.length===1);await p.locator('#taskbar[hidden]').waitFor({state:'attached'});assert.deepEqual(await p.evaluate(()=>test.deletes),['act']);assert.equal(await p.locator('#activities [data-activity=act]').count(),0);assert.deepEqual(errors,[]);
   console.log('PASS v0.6: explicit activity chooser/new activity; deletion/cancel; branding/icons; glass formats; EXIF details and stale-response guard');
- }catch(e){await p.screenshot({path:path.resolve(__dirname,'../../../work/v06-ui-failure.png')});throw e}finally{await browser.close();server.close()}
+ }catch(e){await p.screenshot({path:artifact('v06-ui-failure.png')});throw e}finally{await browser.close();server.close()}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1});
 

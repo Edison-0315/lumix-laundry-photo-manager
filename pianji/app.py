@@ -4,6 +4,7 @@ import sys
 import logging
 from logging.handlers import RotatingFileHandler
 from .bridge import Bridge
+from .window_motion import bind_window_motion
 
 def resource_root(): return Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parents[1]))
 def config_root(): return Path(os.environ.get('LOCALAPPDATA',str(Path.home()/'AppData'/'Local')))/'Pianji'
@@ -15,7 +16,8 @@ def start():
     bridge=Bridge(root,model_root=resource_root()/'models')
     window=webview.create_window('洗衣机管理器',str(resource_root()/'pianji'/'ui'/'index.html'),js_api=bridge,width=1440,height=960,min_size=(1040,720),background_color='#151619',text_select=False,zoomable=False)
     bridge._window=window
-    window.events.closing+=lambda:bridge._close()
+    cleanup=bind_window_motion(window,bridge._close)
     try: webview.start(gui='edgechromium',storage_path=str(root/'webview'),private_mode=True,debug=False,icon=str(resource_root()/'pianji/ui/lumix.ico'))
     finally:
+        cleanup()
         logging.info('Window closed')

@@ -45,3 +45,113 @@ dialog::backdrop{background:#07080b9e;backdrop-filter:blur(5px)}dialog h2{font-s
 @media(prefers-reduced-motion:reduce){button{transition:none}#ambient-photo{background-image:none!important}}
 @media(prefers-reduced-transparency:reduce){.appbar,.sidebar,.inspector,footer,.context-menu,dialog{background:#26272b;backdrop-filter:none}#ambient-photo{display:none}}
 ::-webkit-scrollbar{width:7px;height:7px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#b8bbc34d;border:2px solid transparent;background-clip:padding-box;border-radius:12px}::-webkit-scrollbar-thumb:hover{background-color:#d1d3db70}.inspector .empty small{white-space:pre-line}
+
+/* 0.8 — quiet, immediate controls; spatial motion belongs to transient layers. */
+:root{--motion-fast:140ms;--motion-layer:200ms;--ease-fluid:cubic-bezier(.2,.8,.2,1)}
+.brand{letter-spacing:0}.pagehead>div{min-width:150px}.pagehead h1{line-height:1.25}.pagehead p{margin-top:6px}
+.toolbar{gap:10px;row-gap:8px;border-bottom:1px solid #ffffff09;margin-bottom:10px}
+.toolbar label{white-space:nowrap}.toolbar .check-label{gap:6px}.thumbnail-control{gap:4px;flex:none;margin-left:auto}
+.thumbnail-control input{cursor:ew-resize}.toolbar #select-all{color:#dedee5}.toolbar select{min-height:32px}
+button{touch-action:manipulation;transition:background-color var(--motion-fast) ease,border-color var(--motion-fast) ease,color var(--motion-fast) ease,transform var(--motion-fast) var(--ease-fluid)}
+button:active:not(:disabled){transform:scale(.97);transition:background-color 0s,transform 0s}
+.nav:active:not(:disabled),.side-item:active:not(:disabled),.folder-card:active:not(:disabled),.pick:active:not(:disabled){transform:none}
+.nav.active,.side-item.active{box-shadow:inset 3px 0 0 var(--accent);background:#ffffff13}
+.photo{background:#222326;border-color:#ffffff06}.photo:hover{background:#303136;border-color:#ffffff24}
+.photo.checked{background:#403727;border-color:#e6c18b;box-shadow:inset 0 0 0 1px #e6c18b24}
+.photo.checked .pick{opacity:1}.photo:focus-visible,.folder-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pick:focus-visible{opacity:1}.section-head button{touch-action:manipulation}
+.empty small{line-height:1.75}.empty .outline{margin-top:4px;font-size:13px}
+footer{min-height:66px;flex-wrap:wrap;row-gap:8px}#selection-count{font-variant-numeric:tabular-nums;white-space:nowrap}
+#toast{bottom:92px;max-width:min(560px,calc(100vw - 48px));background:#34353bf5;color:var(--text);border:1px solid #ffffff2b;box-shadow:0 8px 30px #0005;line-height:1.5;pointer-events:none}
+.context-menu{animation:menu-arrive 160ms var(--ease-fluid) both}
+@keyframes menu-arrive{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+
+/* Native close/focus semantics remain synchronous. Supported WebView2 versions
+   keep the exiting surface in the top layer only for its visual transition. */
+@supports (transition-behavior:allow-discrete){
+  dialog{opacity:0;transform:translateY(8px) scale(.96);transition:opacity var(--motion-layer) ease,transform var(--motion-layer) var(--ease-fluid),display var(--motion-layer) allow-discrete,overlay var(--motion-layer) allow-discrete}
+  dialog[open]{opacity:1;transform:none}
+  dialog:not([open]),dialog:not([open])::backdrop{pointer-events:none}
+  dialog::backdrop{background:#07080b00;backdrop-filter:blur(5px);transition:background-color 180ms ease,display var(--motion-layer) allow-discrete,overlay var(--motion-layer) allow-discrete}
+  dialog[open]::backdrop{background:#07080b9e}
+  @starting-style{dialog[open]{opacity:0;transform:translateY(8px) scale(.96)}dialog[open]::backdrop{background:#07080b00}}
+}
+#viewer{inset:12px;margin:auto;width:calc(100vw - 24px);height:calc(100vh - 24px);border-color:#ffffff21;background:#111214;backdrop-filter:none}
+#viewer .viewer-toolbar{flex-wrap:wrap;gap:10px;padding:12px 16px;background:#25262bec;border-bottom:1px solid #ffffff10;flex:none;min-height:64px}
+.viewer-navigation,.viewer-zoom-controls{display:flex;align-items:center;gap:4px;flex:none}
+.viewer-navigation{gap:2px}.viewer-navigation #viewer-position{min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
+#viewer-name{font-size:13px;min-width:40px;max-width:28vw;color:#e5e5eb}
+#viewer-select{border:1px solid #ffffff27;padding-inline:14px;min-width:102px;font-size:13px}
+#viewer-select[aria-pressed=true]{background:#e6c18b;color:#282119;border-color:#e6c18b;font-weight:600}
+.viewer-zoom-controls{border-left:1px solid #ffffff18;padding-left:8px;margin-left:2px}
+.viewer-zoom-controls button{font-size:12px}#viewer-zoom{font-size:12px;color:#c6c7cf;min-width:49px;text-align:center;font-variant-numeric:tabular-nums}
+#viewer-close{margin-left:4px;color:#c9cad2}#viewer-close:hover{background:#ffffff13;color:#fff}
+#viewer-canvas{min-height:0;outline:none}#viewer-canvas:focus-visible{box-shadow:inset 0 0 0 2px #e6c18b70}
+#viewer-canvas.panning{cursor:grabbing}#viewer-image{will-change:transform}
+#viewer-status{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:24px;max-width:80%;text-align:center;line-height:1.6}
+#viewer-canvas[aria-busy=true] #viewer-status::before{content:'';width:22px;height:22px;border:2px solid #ffffff20;border-top-color:#e6c18b;border-radius:50%;animation:preview-loading 800ms linear infinite}
+@keyframes preview-loading{to{transform:rotate(360deg)}}
+.viewer-hint{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;font-size:11px;border-top:1px solid #ffffff0a;flex:none;color:#9c9ea9}
+@media(max-width:1150px){
+  .pagehead{padding:16px 14px;row-gap:10px}.pagehead #source-read-label{font-size:11px}.pagehead>div{min-width:120px}
+  .toolbar{padding:9px 12px;gap:8px}.thumbnail-control{gap:2px}.toolbar .spacer{display:none}
+  #viewer .viewer-toolbar{gap:6px;padding:8px 10px}#viewer-name{max-width:19vw}.viewer-navigation #viewer-position{min-width:48px}
+  #viewer-select{min-width:92px;padding-inline:10px}.viewer-zoom-controls{padding-left:4px}.viewer-zoom-controls button{padding-inline:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+@media(prefers-reduced-transparency:reduce){
+  .appbar,.sidebar,.inspector,footer,.context-menu,dialog,#viewer .viewer-toolbar,#taskbar,#toast,.format-chip,.photo .badge{background:#26272b;backdrop-filter:none}
+  dialog::backdrop{backdrop-filter:none}
+}
+@media(prefers-contrast:more){
+  :root{--muted:#d4d5dc}.sidebar,.inspector,.appbar,footer,.context-menu,dialog{background:#202124;backdrop-filter:none;border-color:#ffffff80}
+  .photo.checked,.folder-card.checked{outline:2px solid #f3ce90}.nav.active,.side-item.active{outline:1px solid #e6c18b}
+}
+@media(forced-colors:active){
+  .photo.checked,.folder-card.checked{outline:2px solid Highlight}.nav.active,.side-item.active{border:1px solid Highlight}
+  #viewer-select[aria-pressed=true]{border:2px solid Highlight}.pick{opacity:1}
+}
+
+/* 0.9: local lensing, sharp foregrounds, and a continuous selection surface. */
+.lens-surface>.lens-backdrop{position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;overflow:hidden;background:linear-gradient(145deg,#ffffff15,#ffffff03 35%,#08090c34),#24262c5e;box-shadow:inset 0 1px 0 #ffffff3a,inset 0 -1px 0 #ffffff10;backdrop-filter:blur(16px) saturate(1.2)}
+.lens-surface>.lens-backdrop::after{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;border:1px solid #ffffff24;background:linear-gradient(120deg,#ffffff10,transparent 42%)}
+.lens-surface>:not(.lens-backdrop){position:relative;z-index:1}
+main{position:relative;--floating-footer-height:66px}
+main>footer{position:absolute;left:16px;right:16px;bottom:16px;z-index:12;padding:12px 16px;border:1px solid #ffffff26;border-radius:20px;background:transparent;backdrop-filter:none;box-shadow:0 12px 36px #0006;min-height:66px;gap:12px}
+main>footer.has-selection{border-color:#e6c18b65}
+main>footer>.lens-backdrop{background:linear-gradient(145deg,#ffffff13,#ffffff02 40%,#08090c25),#191b219e}
+main>footer #photo-count{color:#e2e4ec}
+#gallery{padding-bottom:calc(var(--floating-footer-height) + 44px)}
+#stage-tabs{position:relative;display:flex;gap:4px;padding:4px;margin:0 18px 12px;border:1px solid #ffffff13;border-radius:17px;background:#ffffff04;min-height:46px;flex:none;max-width:560px}
+#stage-tabs button{flex:1;padding:8px 10px;border:0;border-radius:12px;min-height:36px;font-size:12px;white-space:nowrap;z-index:1}
+#stage-tabs button.active{background:transparent;color:#fff;border:0;font-weight:600}
+#stage-tabs button:hover{background:#ffffff09}#stage-tabs button.active:hover{background:transparent}
+.stage-indicator{position:absolute;left:0;top:4px;height:calc(100% - 8px);border-radius:13px;z-index:0;border:1px solid #ffffff35;box-shadow:0 3px 12px #0003;pointer-events:none;background:transparent}
+.stage-indicator>.lens-backdrop{background:linear-gradient(145deg,#ffffff25,#ffffff08 50%,#e6c18b13),#ffffff08}
+#modal.lens-surface{background:transparent;backdrop-filter:none;overflow:hidden}
+#modal-content{min-width:0;max-height:calc(100vh - 108px);overflow:auto;padding:2px 4px 4px 2px;margin:-2px -4px -4px -2px;scrollbar-gutter:stable}
+#modal-content h2{font-size:21px;line-height:1.3;letter-spacing:-.025em}#modal-content .buttons{border-top:1px solid #ffffff12;padding-top:20px}
+#viewer .viewer-toolbar.lens-surface{position:relative;border-radius:18px 18px 0 0;background:transparent;backdrop-filter:none}
+#viewer .viewer-toolbar>.lens-backdrop{border-radius:18px 18px 0 0}
+.disclosure-caret{display:inline-block;font-size:20px;line-height:1;transform:rotate(0);transition:transform var(--motion-fast) var(--ease-fluid)}
+#people-collapse[aria-expanded=true] .disclosure-caret{transform:rotate(90deg)}
+@media(max-width:1150px){main>footer{left:12px;right:12px;bottom:12px;padding:10px 12px;gap:9px}#stage-tabs{margin-inline:12px}#stage-tabs button{padding-inline:6px}}
+@media(prefers-reduced-transparency:reduce),(prefers-contrast:more),(forced-colors:active){
+  .lens-surface>.lens-backdrop{display:none!important}main>footer,#modal.lens-surface,#viewer .viewer-toolbar.lens-surface{background:#27292f;backdrop-filter:none}
+  .stage-indicator{background:#454650;border-color:#ffffff80}
+}
+@media(prefers-reduced-motion:reduce){.disclosure-caret{transition:none}}
+body[data-input-mode=keyboard] dialog,body[data-input-mode=keyboard] dialog::backdrop{transition:none}
+#viewer{flex-direction:column}
+
+/* One source-matched workspace snapshot, not a full-window blocking overlay. */
+:root{view-transition-name:none}
+::view-transition{pointer-events:none}
+::view-transition-group(folder-surface){animation-duration:260ms;animation-timing-function:var(--ease-fluid);pointer-events:none;z-index:1}
+::view-transition-old(folder-surface),::view-transition-new(folder-surface){height:100%;width:100%;object-fit:cover;animation-duration:260ms;animation-timing-function:var(--ease-fluid);pointer-events:none}
+::view-transition-group(workspace-controls){animation:none;z-index:2;pointer-events:none}
+::view-transition-old(workspace-controls){display:none}
+::view-transition-new(workspace-controls){animation:none;pointer-events:none}
+@media(prefers-reduced-motion:reduce){::view-transition-group(folder-surface),::view-transition-old(folder-surface),::view-transition-new(folder-surface){animation:none!important}}

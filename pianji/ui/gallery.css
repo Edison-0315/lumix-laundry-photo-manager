@@ -1,0 +1,65 @@
+/* The sizing variable belongs to the grid, not to every image and label below it. */
+@property --thumb-size {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 240px;
+}
+
+/* Keep the requested size across column changes; spare space stays at the right. */
+#gallery {
+  grid-template-columns: repeat(auto-fill, minmax(0, min(var(--thumb-size), 100%)));
+  scrollbar-gutter: stable;
+}
+
+/* Folder artwork scales as a whole instead of remaining a fixed-height strip. */
+.folder-card {
+  display: block;
+  align-content: start;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px;
+}
+
+.folder-art {
+  flex: none;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 4 / 3;
+  padding: 4px;
+  contain: layout style;
+}
+
+.folder-art > .folder-samples {
+  position: absolute;
+  inset: 4px;
+  width: auto;
+  height: auto;
+}
+
+.folder-art > .folder-icon {
+  width: 50%;
+  max-width: 66px;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.folder-card > strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.4;
+  height: 2.8em;
+  max-height: 2.8em;
+  overflow: hidden;
+}
+
+.folder-card > .small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  margin-top: 7px;
+}

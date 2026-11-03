@@ -1,3 +1,4 @@
+const artifact=require('./helpers/artifact.cjs');
 const {chromium}=require('playwright'),http=require('http'),fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'../pianji/ui');
 const server=http.createServer((req,res)=>{const p=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);if(!p.startsWith(root+path.sep)){res.writeHead(403).end();return}try{res.setHeader('Content-Type',{'.html':'text/html','.js':'text/javascript','.css':'text/css'}[path.extname(p)]||'text/plain');res.end(fs.readFileSync(p))}catch{res.writeHead(404).end()}});
@@ -31,6 +32,6 @@ const server=http.createServer((req,res)=>{const p=path.resolve(root,'.'+new URL
     await page.locator('[data-view=sd]').click();await page.locator('#choose-source').click();await page.getByRole('button',{name:'文件夹 RAW',exact:true}).click();assert.equal(await page.locator('.photo').count(),2);
     await page.locator('#format-filter').selectOption('jpeg');assert.equal(await page.locator('.photo').count(),1);await page.locator('#format-filter').selectOption('raw');assert.equal(await page.locator('.photo').count(),2);
     await page.locator('.photo').first().click({button:'right'});assert.equal(await page.getByRole('menuitem',{name:'删除照片…',exact:true}).count(),0);await page.keyboard.press('Escape');assert.deepEqual(errors,[]);
-    await page.screenshot({path:path.resolve(__dirname,'../../../work/v03-ui.png')});console.log('PASS v0.3: context group/unselected/keyboard; trash restore; create library; split folders and filters; SD protected');
-  }catch(e){await page.screenshot({path:path.resolve(__dirname,'../../../work/v03-ui-failure.png')});throw e}finally{await browser.close();server.close()}
+    await page.screenshot({path:artifact('v03-ui.png')});console.log('PASS v0.3: context group/unselected/keyboard; trash restore; create library; split folders and filters; SD protected');
+  }catch(e){await page.screenshot({path:artifact('v03-ui-failure.png')});throw e}finally{await browser.close();server.close()}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1});

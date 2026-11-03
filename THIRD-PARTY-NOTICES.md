@@ -17,3 +17,5 @@
 YuNet/SFace model files come from opencv/opencv_zoo at fixed commit `48b10fa505aeb51fbd127fc60a5c660040e823b7`. Each model's source URL, SHA-256 and adjacent license are included in`models/manifest.json`. YuNet's directory uses MIT; SFace's directory uses Apache-2.0. See the included original license text. Model thresholds are conservative initial engineering settings and imply no guaranteed recognition accuracy.
 
 Microsoft Edge WebView2 Runtime is a system prerequisite and is not redistributed in this bundle. Public portrait photographs used during development are not included in the application or portable bundle.
+
+Interface design references: Emil Kowalski's apple-design guidance (https://github.com/emilkowalski/skills), apple-ui-design (https://github.com/629611312/apple-ui-design), and AppleUI Design Pro's optical-core guidance (https://github.com/JettShyung/AppleUI-Design-Pro). The local SDF/displacement implementation is written for this project; no Apple fonts, logos, private shaders, or platform assets are included. The optical effect is a WebView2 approximation, not Apple's native Liquid Glass renderer.

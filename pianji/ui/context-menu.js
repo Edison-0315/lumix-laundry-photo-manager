@@ -1,11 +1,31 @@
 import {state,$,selected,visible,current,button,el,error} from './store.js';
 import {syncSelection,openViewer} from './gallery.js';
+import {reducedMotion} from './motion.js';
 let menu=null,origin=null;
-const close=(focus=false)=>{menu?.remove();menu=null;if(focus)origin?.focus()};
+const close=(focus=false)=>{
+  const outgoing=menu;menu=null;
+  if(outgoing){
+    if(reducedMotion())outgoing.remove();
+    else{
+      const style=getComputedStyle(outgoing),opacity=style.opacity,transform=style.transform;
+      outgoing.inert=true;outgoing.setAttribute('aria-hidden','true');outgoing.removeAttribute('role');
+      outgoing.querySelectorAll('[role]').forEach(node=>node.removeAttribute('role'));
+      outgoing.style.pointerEvents='none';outgoing.style.animation='none';
+      const exit=outgoing.animate([{opacity,transform},{opacity:0,transform:'scale(.97)'}],{duration:100,easing:'ease-in',fill:'forwards'});
+      exit.finished.then(()=>outgoing.remove(),()=>outgoing.remove());
+    }
+  }
+  if(focus)origin?.focus();
+};
 export function commandMenu(x,y,title,entries){
   close();origin=document.activeElement;menu=el('div','context-menu');menu.setAttribute('role','menu');menu.setAttribute('aria-label',title);menu.append(el('div','menu-heading',title));
   for(const item of entries){const b=button(item.name,()=>{close();Promise.resolve().then(item.fn).catch(error)},item.danger?'danger':'');b.disabled=Boolean(item.disabled);b.setAttribute('role','menuitem');menu.append(b)}
-  document.body.append(menu);const r=menu.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(x,innerWidth-r.width-8))+'px';menu.style.top=Math.max(8,Math.min(y,innerHeight-r.height-8))+'px';menu.querySelector('button:not(:disabled)')?.focus();
+  placeMenu(x,y);menu.querySelector('button:not(:disabled)')?.focus();
+}
+function placeMenu(x,y){
+  document.body.append(menu);const width=menu.offsetWidth,height=menu.offsetHeight;
+  const left=Math.max(8,Math.min(x,innerWidth-width-8)),top=Math.max(8,Math.min(y,innerHeight-height-8));
+  menu.style.left=left+'px';menu.style.top=top+'px';menu.style.transformOrigin=`${Math.max(0,Math.min(width,x-left))}px ${Math.max(0,Math.min(height,y-top))}px`;
 }
 
 export function setupContextMenu(actions,inspect){
@@ -25,7 +45,7 @@ export function setupContextMenu(actions,inspect){
       }
       add('删除照片…',actions.trash,state.busy,true);
     }
-    document.body.append(menu);const rect=menu.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(x,innerWidth-rect.width-8))+'px';menu.style.top=Math.max(8,Math.min(y,innerHeight-rect.height-8))+'px';menu.querySelector('button:not(:disabled)')?.focus();
+    placeMenu(x,y);menu.querySelector('button:not(:disabled)')?.focus();
   };
   $('#gallery').addEventListener('contextmenu',e=>{
     e.preventDefault();const card=e.target.closest('.photo');if(!card)return;

@@ -1,6 +1,6 @@
 import {api} from './api.js';
 import {state,el,button,resetLibrarySelection,toast} from './store.js';
-import {modal} from './dialogs.js';
+import {modal} from './core/modal.js';
 import {invalidateLibraryPreviews} from './previews.js';
 import {clearChoices} from './choice-list.js';
 import {clearHistory} from './navigation.js';

@@ -1,9 +1,15 @@
-param([string]$Python = 'python', [string]$Version = '0.7')
+param(
+  [string]$Python = 'python',
+  [string]$Version = '0.12.1',
+  [string]$OutputsRoot = '',
+  [string]$BuildRoot = ''
+)
 $ErrorActionPreference = 'Stop'
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
-$OutputsRoot = Split-Path -Parent $ProjectRoot
-$WorkspaceRoot = Split-Path -Parent $OutputsRoot
-$BuildRoot = Join-Path $WorkspaceRoot 'work/photo-manager-build'
+if (!$OutputsRoot) { $OutputsRoot = Join-Path $ProjectRoot 'dist' }
+if (!$BuildRoot) { $BuildRoot = Join-Path $ProjectRoot 'build/photo-manager' }
+$OutputsRoot = [System.IO.Path]::GetFullPath($OutputsRoot)
+$BuildRoot = [System.IO.Path]::GetFullPath($BuildRoot)
 $BundleName = '洗衣机管理器-Windows-' + $Version
 $PreviousBundleName = $env:PIANJI_BUNDLE_NAME
 $env:PIANJI_BUNDLE_NAME = $BundleName

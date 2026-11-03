@@ -1,396 +1,347 @@
 from pathlib import Path
-from dataclasses import asdict
-import hashlib
-import json
 import threading
 from .catalog import Catalog
-from .domain import uid,PhotoGroup,FileAsset
-from .paths import safe_name,inside
-from .fileops import FileJournal,digest
+from .domain import uid, PhotoGroup, FileAsset
+from .paths import safe_name, inside
+from .fileops import FileJournal, digest
 from .locking import LibraryLock
 
+from .services import imports, people, exports, trash, activities
+
+
 class Library:
-    def __init__(self,root):
-        self._root_lock=LibraryLock(Path(root).resolve());self._closed=False
-        self.catalog=Catalog(root); self.root=self.catalog.root
-        self.journal=FileJournal(self.catalog); self.lock=threading.RLock()
-        self.recovery=self.recover_pending()
+    def __init__(self, root):
+        self._root_lock = LibraryLock(Path(root).resolve())
+        self._closed = False
+        self.catalog = Catalog(root)
+        self.root = self.catalog.root
+        self.journal = FileJournal(self.catalog)
+        self.lock = threading.RLock()
+        self.recovery = self.recover_pending()
 
     def close(self):
-        with self.lock,self.journal.access:
-            if not self._closed:self._closed=True;self._root_lock.close()
+        with self.lock, self.journal.access:
+            if not self._closed:
+                self._closed = True
+                self._root_lock.close()
 
-    def recover_pending(self): return self.journal.recover_pending()
+    def recover_pending(self):
+        return self.journal.recover_pending()
 
-    def create_activity(self,name):
-        with self.lock:
-            self._ready();safe_name(name)
-            if any(a['name'].casefold()==name.casefold() for a in self.catalog.activities()):raise ValueError('同名活动已存在，请选择已有活动')
-            deleted=self.catalog.rows('SELECT a.* FROM activities a JOIN deleted_activities d ON d.activity_id=a.id WHERE lower(a.name)=lower(?)',(name,))
-            if deleted:
-                if self.catalog.rows('SELECT id FROM photos WHERE activity_id=?',(deleted[0]['id'],)):
-                    raise ValueError('此活动仍有照片在回收站，请先恢复照片或使用其他名称')
-                self.journal.execute('recreate_activity',[],[('DELETE FROM deleted_activities WHERE activity_id=?',(deleted[0]['id'],))])
-                return deleted[0]
-            folder=inside(self.root,self.root/name);folder.mkdir(exist_ok=False)
-            try:return self.catalog.activity(name)
-            except Exception:
-                # Only the empty directory exclusively created by this call.
-                try:folder.rmdir()
-                except OSError:pass
-                raise
+    def create_activity(self, name):
+        return activities.create_activity(self, name)
 
     def _ready(self):
-        if self._closed: raise ValueError('照片库已关闭')
+        if self._closed:
+            raise ValueError("照片库已关闭")
         if self.catalog.rows("SELECT id FROM operations WHERE phase!='committed'"):
-            raise ValueError('有文件操作尚待恢复，请先关闭占用程序并重试恢复')
+            raise ValueError("有文件操作尚待恢复，请先关闭占用程序并重试恢复")
 
-    def _folder(self,activity_id,person_id,edited,kind,person_folder=None):
-        activity=self.catalog.rows('SELECT * FROM activities WHERE id=?',(activity_id,))[0]
-        person=self.catalog.person(person_id)
-        if person['activity_id']!=activity_id: raise ValueError('不能将照片放入其他活动的人物')
-        base=self.root/activity['folder']/(person_folder or person['folder'])
-        return base/'成片' if kind=='export' else base/('已修原片' if edited else '选出原片')/('JPEG' if kind=='jpeg' else 'RAW')
+    def _folder(self, activity_id, person_id, edited, kind, person_folder=None):
+        activity = self.catalog.rows(
+            "SELECT * FROM activities WHERE id=?", (activity_id,)
+        )[0]
+        person = self.catalog.person(person_id)
+        if person["activity_id"] != activity_id:
+            raise ValueError("不能将照片放入其他活动的人物")
+        base = self.root / activity["folder"] / (person_folder or person["folder"])
+        return (
+            base / "成片"
+            if kind == "export"
+            else base
+            / ("已修原片" if edited else "选出原片")
+            / ("JPEG" if kind == "jpeg" else "RAW")
+        )
 
-    def _destinations(self,assets,activity_id,person_id,edited,stem,person_folder=None,reserved=None):
+    def _destinations(
+        self,
+        assets,
+        activity_id,
+        person_id,
+        edited,
+        stem,
+        person_folder=None,
+        reserved=None,
+    ):
         # Reserve one suffix for the entire group, across every format/version.
         safe_name(stem)
-        old={str(Path(a['path']).resolve()) for a in assets}
+        old = {str(Path(a["path"]).resolve()) for a in assets}
         for n in range(10000):
-            candidate=stem if n==0 else f'{stem}_{n+1}'
-            paths=[]; seen=set()
+            candidate = stem if n == 0 else f"{stem}_{n+1}"
+            paths = []
+            seen = set()
             for a in assets:
-                suffix=Path(a['path']).suffix
-                filename=(candidate+('_'+a['id'][:8] if a['kind']=='export' else '')+suffix)
-                dst=inside(self.root,self._folder(activity_id,person_id,edited,a['kind'],person_folder)/filename)
-                if str(dst) in seen: filename=candidate+'_'+a['id'][:8]+suffix; dst=dst.with_name(filename)
-                seen.add(str(dst)); paths.append(str(dst))
-            if all((not Path(p).exists() or p in old) and p.casefold() not in (reserved or set()) for p in paths): return paths
-        raise ValueError('同名照片过多，请更换名称')
+                suffix = Path(a["path"]).suffix
+                filename = (
+                    candidate
+                    + ("_" + a["id"][:8] if a["kind"] == "export" else "")
+                    + suffix
+                )
+                dst = inside(
+                    self.root,
+                    self._folder(
+                        activity_id, person_id, edited, a["kind"], person_folder
+                    )
+                    / filename,
+                )
+                if str(dst) in seen:
+                    filename = candidate + "_" + a["id"][:8] + suffix
+                    dst = dst.with_name(filename)
+                seen.add(str(dst))
+                paths.append(str(dst))
+            if all(
+                (not Path(p).exists() or p in old)
+                and p.casefold() not in (reserved or set())
+                for p in paths
+            ):
+                return paths
+        raise ValueError("同名照片过多，请更换名称")
 
-    def import_groups(self,groups,activity,formats='both',cancel=lambda:False,progress=lambda n,t,m:None):
-        with self.lock:
-            self._ready()
-            if formats not in ('both','jpeg','raw'): raise ValueError('未知照片格式')
-            act=self.catalog.activity(activity)
-            unclassified=next(p for p in self.catalog.people(act['id']) if p['role']=='unclassified')
-            report={'imported':[],'updated':[],'skipped':0,'errors':[],'cancelled':False,'activity_id':act['id']}
-            for n,g in enumerate(groups):
-                if cancel(): report['cancelled']=True; break
-                try:
-                    safe_name(g.stem)
-                    files=[a for a in g.files if a.kind in (('jpeg','raw','xmp') if formats=='both' else ('raw','xmp') if formats=='raw' else ('jpeg',))]
-                    if not any(a.kind in ('jpeg','raw') for a in files):
-                        report['skipped']+=1; continue
-                    ident=uid(); assets=[]
-                    # Hash companions too, so separately importing JPEG then RAW
-                    # from the same scan retains the established group identity.
-                    companions=[]
-                    for a in g.files:
-                        source=Path(a.path).resolve()
-                        if source.is_relative_to(self.root): raise ValueError('来源位于照片库内，请选择SD卡或库外文件夹')
-                        try:sha=digest(source)
-                        except OSError:
-                            if a not in files:continue
-                            raise
-                        item={'id':uid(),'photo_id':ident,'kind':a.kind,'path':str(source),'sha256':sha}
-                        companions.append(item)
-                        if a in files:assets.append(item)
-                    sig=hashlib.sha256(repr(sorted((a['kind'],a['sha256']) for a in assets)).encode()).hexdigest()
-                    existing=self._matching_photo(act['id'],companions)
-                    if existing:
-                        if self._supplement(existing,assets):report['updated'].append(existing['id'])
-                        else:report['skipped']+=1
-                        continue
-                    if self.catalog.rows('SELECT id FROM photos WHERE activity_id=? AND signature=?',(act['id'],sig)):
-                        report['skipped']+=1; continue
-                    destinations=self._destinations(assets,act['id'],unclassified['id'],False,g.stem)
-                    changes=[{'src':a['path'],'dst':d,'sha256':a['sha256'],'move':False} for a,d in zip(assets,destinations)]
-                    sql=[('INSERT INTO photos(id,activity_id,person_id,stem,captured_at,signature) VALUES(?,?,?,?,?,?)',(ident,act['id'],unclassified['id'],g.stem,g.captured_at,sig))]
-                    sql += [('INSERT INTO assets VALUES(?,?,?,?,?)',(a['id'],ident,a['kind'],d,a['sha256'])) for a,d in zip(assets,destinations)]
-                    sql += self._import_member_sql(act['id'],ident,assets)
-                    self.journal.execute('import',changes,sql,{'photo_id':ident})
-                    report['imported'].append(ident)
-                except Exception as e: report['errors'].append({'name':g.stem,'message':str(e)})
-                finally: progress(n+1,len(groups),'复制并校验照片')
-            return report
+    def import_groups(
+        self,
+        groups,
+        activity,
+        formats="both",
+        cancel=lambda: False,
+        progress=lambda n, t, m: None,
+    ):
+        return imports.import_groups(self, groups, activity, formats, cancel, progress)
 
     @staticmethod
-    def _import_member_sql(activity_id,photo_id,assets):
-        return [('INSERT OR IGNORE INTO import_members VALUES(?,?,?,?)',(activity_id,a['kind'],a['sha256'],photo_id)) for a in assets if a['kind'] in ('jpeg','raw')]
+    def _import_member_sql(activity_id, photo_id, assets):
+        return imports._import_member_sql(activity_id, photo_id, assets)
 
-    def _matching_photo(self,activity_id,assets):
-        candidates=set()
-        for a in assets:
-            if a['kind'] in ('jpeg','raw'):
-                candidates.update(r['photo_id'] for r in self.catalog.rows('SELECT photo_id FROM import_members WHERE activity_id=? AND kind=? AND sha256=?',(activity_id,a['kind'],a['sha256'])))
-        if len(candidates)>1:raise ValueError('相同内容对应多个已有照片，请先核对照片库，未自动合并')
-        if not candidates:return None
-        ident=next(iter(candidates))
-        for a in assets:
-            if a['kind'] not in ('jpeg','raw'):continue
-            prior=self.catalog.rows('SELECT sha256 FROM import_members WHERE photo_id=? AND kind=?',(ident,a['kind']))
-            if prior and a['sha256'] not in {r['sha256'] for r in prior}:return None
-        return self.catalog.photo(ident)
+    def _matching_photo(self, activity_id, assets):
+        return imports._matching_photo(self, activity_id, assets)
 
-    def _supplement(self,photo,incoming):
-        originals=self._fresh_assets(photo);kinds={a['kind'] for a in originals}
-        extra=[{**a,'id':uid(),'photo_id':photo['id'],'_new':True,'_copy':True} for a in incoming if a['kind'] not in kinds]
-        if not extra:return False
-        all_assets=originals+extra
-        # Existing group metadata and even locally edited JPEG bytes survive.
-        destinations=self._destinations(all_assets,photo['activity_id'],photo['person_id'],photo['edited'],photo['stem'])
-        changes=[];sql=[]
-        for a,d in zip(all_assets,destinations):
-            if str(Path(a['path']).resolve())!=d:
-                changes.append({'src':a['path'],'dst':d,'sha256':a['sha256'],'move':not bool(a.get('_copy'))})
-            sql.append(self._asset_sql(a,d))
-        sql+=self._import_member_sql(photo['activity_id'],photo['id'],incoming)
-        self.journal.execute('supplement',changes,sql,{'photo_id':photo['id']})
-        return True
+    def _supplement(self, photo, incoming):
+        return imports._supplement(self, photo, incoming)
 
-    def _move(self,photo,person_id=None,edited=None,manual=None,person_folder=None,extra_sql=None,allow_missing=False):
-        person_id=person_id or photo['person_id']; edited=bool(photo['edited']) if edited is None else bool(edited)
-        assets=self._fresh_assets(photo,allow_missing=allow_missing); destinations=self._destinations(assets,photo['activity_id'],person_id,edited,photo['stem'],person_folder)
-        changes=[]; sql=[]
-        for a,d in zip(assets,destinations):
-            if str(Path(a['path']).resolve())!=d and not a.get('_missing'):
-                changes.append({'src':a['path'],'dst':d,'sha256':a['sha256'],'move':True})
-            sql.append(self._asset_sql(a,d))
-        manual=photo['manual_person'] if manual is None else manual
-        sql.append(('UPDATE photos SET person_id=?,edited=?,manual_person=? WHERE id=?',(person_id,int(edited),int(manual),photo['id'])))
-        sql+=extra_sql or []
-        return self.journal.execute('move',changes,sql,{'photo_id':photo['id'],'before':{k:photo[k] for k in ('person_id','edited','manual_person')},'after':{'person_id':person_id,'edited':int(edited),'manual_person':int(manual)},'cleanup_dirs':[str(Path(a['path']).parent) for a in assets]})
+    def _move(
+        self,
+        photo,
+        person_id=None,
+        edited=None,
+        manual=None,
+        person_folder=None,
+        extra_sql=None,
+        allow_missing=False,
+    ):
+        person_id = person_id or photo["person_id"]
+        edited = bool(photo["edited"]) if edited is None else bool(edited)
+        assets = self._fresh_assets(photo, allow_missing=allow_missing)
+        destinations = self._destinations(
+            assets,
+            photo["activity_id"],
+            person_id,
+            edited,
+            photo["stem"],
+            person_folder,
+        )
+        changes = []
+        sql = []
+        for a, d in zip(assets, destinations):
+            if str(Path(a["path"]).resolve()) != d and not a.get("_missing"):
+                changes.append(
+                    {"src": a["path"], "dst": d, "sha256": a["sha256"], "move": True}
+                )
+            sql.append(self._asset_sql(a, d))
+        manual = photo["manual_person"] if manual is None else manual
+        sql.append(
+            (
+                "UPDATE photos SET person_id=?,edited=?,manual_person=? WHERE id=?",
+                (person_id, int(edited), int(manual), photo["id"]),
+            )
+        )
+        sql += extra_sql or []
+        return self.journal.execute(
+            "move",
+            changes,
+            sql,
+            {
+                "photo_id": photo["id"],
+                "before": {
+                    k: photo[k] for k in ("person_id", "edited", "manual_person")
+                },
+                "after": {
+                    "person_id": person_id,
+                    "edited": int(edited),
+                    "manual_person": int(manual),
+                },
+                "cleanup_dirs": [str(Path(a["path"]).parent) for a in assets],
+            },
+        )
 
-    def _fresh_assets(self,photo,allow_missing=False):
-        assets=[dict(a) for a in photo['assets']]
-        known={str(Path(a['path']).resolve()).casefold() for a in assets}
-        for raw in [a for a in assets if a['kind']=='raw']:
-            path=Path(raw['path'])
-            for sidecar in (path.with_suffix('.xmp'),path.with_suffix('.XMP'),Path(str(path)+'.xmp')):
-                resolved=str(sidecar.resolve())
+    def _fresh_assets(self, photo, allow_missing=False):
+        assets = [dict(a) for a in photo["assets"]]
+        known = {str(Path(a["path"]).resolve()).casefold() for a in assets}
+        for raw in [a for a in assets if a["kind"] == "raw"]:
+            path = Path(raw["path"])
+            for sidecar in (
+                path.with_suffix(".xmp"),
+                path.with_suffix(".XMP"),
+                Path(str(path) + ".xmp"),
+            ):
+                resolved = str(sidecar.resolve())
                 if sidecar.is_file() and resolved.casefold() not in known:
-                    inside(self.root,sidecar)
-                    if self.catalog.rows('SELECT id FROM assets WHERE path=?',(resolved,)): continue
-                    assets.append({'id':uid(),'photo_id':photo['id'],'kind':'xmp','path':resolved,'sha256':'','_new':True});known.add(resolved.casefold())
+                    inside(self.root, sidecar)
+                    if self.catalog.rows(
+                        "SELECT id FROM assets WHERE path=?", (resolved,)
+                    ):
+                        continue
+                    assets.append(
+                        {
+                            "id": uid(),
+                            "photo_id": photo["id"],
+                            "kind": "xmp",
+                            "path": resolved,
+                            "sha256": "",
+                            "_new": True,
+                        }
+                    )
+                    known.add(resolved.casefold())
         for a in assets:
-            inside(self.root,a['path'])
-            if allow_missing and not Path(a['path']).is_file():a['_missing']=True
-            else:a['sha256']=digest(a['path'])
+            inside(self.root, a["path"])
+            if allow_missing and not Path(a["path"]).is_file():
+                a["_missing"] = True
+            else:
+                a["sha256"] = digest(a["path"])
         return assets
 
     @staticmethod
-    def _asset_sql(asset,destination):
-        if asset.get('_new'): return ('INSERT INTO assets VALUES(?,?,?,?,?)',(asset['id'],asset['photo_id'],asset['kind'],destination,asset['sha256']))
-        return ('UPDATE assets SET path=?,sha256=? WHERE id=?',(destination,asset['sha256'],asset['id']))
+    def _asset_sql(asset, destination):
+        if asset.get("_new"):
+            return (
+                "INSERT INTO assets VALUES(?,?,?,?,?)",
+                (
+                    asset["id"],
+                    asset["photo_id"],
+                    asset["kind"],
+                    destination,
+                    asset["sha256"],
+                ),
+            )
+        return (
+            "UPDATE assets SET path=?,sha256=? WHERE id=?",
+            (destination, asset["sha256"], asset["id"]),
+        )
 
-    def _batch(self,ids,fn,cancel=lambda:False,progress=lambda n,t,m:None,include_trashed=False):
-        with self.lock:
-            self._ready(); result={'operations':[],'photo_ids':[],'skipped':0,'errors':[],'cancelled':False}
-            unique=list(dict.fromkeys(ids))
-            for n,ident in enumerate(unique):
-                if cancel():result['cancelled']=True;break
-                try:
-                    operation=fn(self.catalog.photo(ident,include_trashed=include_trashed))
-                    if operation:result['operations'].append(operation);result['photo_ids'].append(ident)
-                    else:result['skipped']+=1
-                except Exception as e: result['errors'].append({'id':ident,'message':str(e)})
-                finally:progress(n+1,len(unique),'整理照片文件')
-            return result
-
-    def set_person(self,ids,person_id,manual=True,cancel=lambda:False,progress=lambda n,t,m:None):
-        self.catalog.person(person_id)
-        return self._batch(ids,lambda p:self._move(p,person_id=person_id,manual=manual),cancel,progress)
-
-    def set_edited(self,ids,value,cancel=lambda:False,progress=lambda n,t,m:None): return self._batch(ids,lambda p:self._move(p,edited=value),cancel,progress)
-
-    def trash_photos(self,ids,cancel=lambda:False,progress=lambda n,t,m:None):
-        def apply(photo):
-            changes=[];sql=[];locations=[]
-            originals=self._fresh_assets(photo,allow_missing=True)
-            detached=self.catalog.rows('SELECT * FROM detached_exports WHERE photo_id=?',(photo['id'],))
-            for table,items in [('assets',originals),('detached_exports',detached)]:
-                for a in items:
-                    src=inside(self.root,a['path']);dst=src;sha=a['sha256']
-                    if src.is_file():
-                        sha=digest(src);dst=inside(self.root,self.catalog.meta/'回收站'/photo['id']/a['id']/src.name)
-                        changes.append({'src':str(src),'dst':str(dst),'sha256':sha,'move':True})
-                    locations.append({'table':table,'id':a['id'],'original':str(src)})
-                    if table=='assets':sql.append(self._asset_sql({**a,'sha256':sha},str(dst)))
-                    else:sql.append(('UPDATE detached_exports SET path=?,sha256=? WHERE id=?',(str(dst),sha,a['id'])))
-            sql.append(('INSERT INTO trashed_photos(photo_id,payload) VALUES(?,?)',(photo['id'],json.dumps(locations,ensure_ascii=False))))
-            return self.journal.execute('trash',changes,sql,{'photo_id':photo['id'],'cleanup_dirs':[str(Path(a['path']).parent) for a in originals+detached]})
-        return self._batch(ids,apply,cancel,progress)
-
-    def restore_photos(self,ids,cancel=lambda:False,progress=lambda n,t,m:None):
-        def apply(photo):
-            from .permanent import pending
-            if pending(self.catalog,photo['id']):raise ValueError('此照片的永久删除尚未完成，不能恢复；请关闭占用程序后重试永久删除')
-            record=self.catalog.rows('SELECT payload FROM trashed_photos WHERE photo_id=?',(photo['id'],))
-            if not record:return None
-            changes=[];sql=[]
-            originals=self._fresh_assets(photo,allow_missing=True)
-            destinations=self._destinations(originals,photo['activity_id'],photo['person_id'],photo['edited'],photo['stem'])
-            for a,dst in zip(originals,destinations):
-                if not a.get('_missing'):
-                    changes.append({'src':a['path'],'dst':dst,'sha256':a['sha256'],'move':True})
-                sql.append(self._asset_sql(a,dst))
-            for entry in json.loads(record[0]['payload']):
-                if entry['table']!='detached_exports':continue
-                a=self.catalog.rows('SELECT * FROM detached_exports WHERE id=?',(entry['id'],))[0]
-                src=inside(self.root,a['path']);dst=inside(self.root,entry['original'])
-                if src==dst:continue
-                if dst.exists():raise FileExistsError('保留版本原位置已有文件，请先移开同名文件后恢复')
-                sha=a['sha256']
-                if src.is_file():
-                    sha=digest(src);changes.append({'src':str(src),'dst':str(dst),'sha256':sha,'move':True})
-                sql.append(('UPDATE detached_exports SET path=?,sha256=? WHERE id=?',(str(dst),sha,a['id'])))
-            sql.append(('DELETE FROM trashed_photos WHERE photo_id=?',(photo['id'],)))
-            sql.append(('DELETE FROM deleted_activities WHERE activity_id=?',(photo['activity_id'],)))
-            return self.journal.execute('restore',changes,sql,{'photo_id':photo['id']})
-        return self._batch(ids,apply,cancel,progress,include_trashed=True)
-
-    def purge_trash(self,ids,cancel=lambda:False,progress=lambda n,t,m:None):
-        from .permanent import purge
-        return purge(self,ids,cancel,progress)
-
-    def delete_activity(self,activity_id,cancel=lambda:False,progress=lambda n,t,m:None):
+    def _batch(
+        self,
+        ids,
+        fn,
+        cancel=lambda: False,
+        progress=lambda n, t, m: None,
+        include_trashed=False,
+    ):
         with self.lock:
             self._ready()
-            if not any(a['id']==activity_id for a in self.catalog.activities()):raise ValueError('活动不存在或已删除')
-            ids=[p['id'] for p in self.catalog.photos(activity_id)]
-            result=self.trash_photos(ids,cancel,progress)
-            result['deleted_activity']=None
-            if cancel():result['cancelled']=True
-            if not result['errors'] and not result['cancelled']:
-                self.journal.execute('delete_activity',[],[('INSERT INTO deleted_activities(activity_id) VALUES(?)',(activity_id,))])
-                result['deleted_activity']=activity_id
-                from .cleanup import cleanup_library
-                folder=self.catalog.rows('SELECT folder FROM activities WHERE id=?',(activity_id,))[0]['folder']
-                cleanup_library(self,self.root/folder)
-            return result
-
-    def link_export(self,photo_id,file):
-        with self.lock:
-            self._ready(); p=self.catalog.photo(photo_id); source=Path(file).resolve()
-            if source.suffix.lower() not in ('.jpg','.jpeg','.png','.tif','.tiff','.webp'): raise ValueError('请选择导出的图片文件')
-            from PIL import Image
-            with Image.open(source) as im: im.verify()
-            ident=uid(); sha=digest(source)
-            asset={'id':ident,'photo_id':photo_id,'kind':'export','path':str(source),'sha256':sha}
-            dst=self._destinations([asset],p['activity_id'],p['person_id'],True,p['stem'])[0]
-            originals=self._fresh_assets(p)
-            destinations=self._destinations(originals,p['activity_id'],p['person_id'],True,p['stem'])
-            changes=[]; sql=[]
-            for a,d in zip(originals,destinations):
-                if str(Path(a['path']).resolve())!=d:
-                    changes.append({'src':a['path'],'dst':d,'sha256':a['sha256'],'move':True})
-                sql.append(self._asset_sql(a,d))
-            # A directly marked JPEG may be one of the originals being moved.
-            # Copy it before relocating the originals, in the same journal.
-            changes.insert(0,{'src':str(source),'dst':dst,'sha256':sha,'move':False})
-            sql += [('INSERT INTO assets VALUES(?,?,?,?,?)',(ident,photo_id,'export',dst,sha)),('UPDATE photos SET edited=1,primary_export_id=? WHERE id=?',(ident,photo_id))]
-            return self.journal.execute('export',changes,sql,{'photo_id':photo_id,'export_id':ident})
-
-    def set_finished(self,ids,value,cancel=lambda:False,progress=lambda n,t,m:None):
-        def apply(photo):
-            if value:
-                if photo['primary_export_id']:return None
-                jpeg=next((a for a in photo['assets'] if a['kind']=='jpeg'),None)
-                if not jpeg:raise ValueError('RAW不能直接作为成片，请先导出JPEG后关联')
-                return self.link_export(photo['id'],jpeg['path'])
-            return self.unlink_export(photo['id'])
-        return self._batch(ids,apply,cancel,progress)
-
-    def unlink_export(self,photo_id,asset_id=None):
-        with self.lock:
-            self._ready();photo=self.catalog.photo(photo_id)
-            removed=[a for a in photo['assets'] if a['kind']=='export' and (asset_id is None or a['id']==asset_id)]
-            if not removed:
-                if asset_id:raise ValueError('成片关联已不存在，请刷新后重试')
-                return None
-            changes=[];sql=[]
-            for a in removed:
-                source=inside(self.root,a['path'])
-                if source.exists():
-                    sha=digest(source);destination=inside(self.root,self.catalog.meta/'取消关联保留'/photo_id/a['id']/source.name)
-                    changes.append({'src':str(source),'dst':str(destination),'sha256':sha,'move':True})
-                else:
-                    sha=a['sha256'];destination=source
-                sql += [('INSERT INTO detached_exports VALUES(?,?,?,?)',(a['id'],photo_id,str(destination),sha)),('DELETE FROM assets WHERE id=?',(a['id'],))]
-            remaining=[a for a in photo['assets'] if a['kind']=='export' and a not in removed]
-            primary=photo['primary_export_id'] if any(a['id']==photo['primary_export_id'] for a in remaining) else (remaining[-1]['id'] if remaining else None)
-            sql.append(('UPDATE photos SET primary_export_id=? WHERE id=?',(primary,photo_id)))
-            return self.journal.execute('unlink_export',changes,sql,{'photo_id':photo_id,'detached':[a['id'] for a in removed]})
-
-    def undo_operation(self,opid):
-        with self.lock:
-            self._ready(); op=self.catalog.operation(opid)
-            if op['kind']!='move' or op['phase']!='committed' or op['error']: raise ValueError('此操作不能撤销')
-            data=op['payload']; p=self.catalog.photo(data['photo_id'])
-            if any(p[k]!=v for k,v in data['after'].items()): raise ValueError('照片后来已变更，请手动调整，避免覆盖新状态')
-            return self._move(p,**{'person_id':data['before']['person_id'],'edited':data['before']['edited'],'manual':data['before']['manual_person']})
-
-    def rename_person(self,person_id,name):
-        with self.lock:
-            self._ready(); safe_name(name); person=self.catalog.person(person_id)
-            if person['role']: raise ValueError('合照和待分类名称固定')
-            if any(p['name'].casefold()==name.casefold() and p['id']!=person_id for p in self.catalog.people(person['activity_id'])): raise ValueError('同名人物已存在，请使用合并')
-            # One journal for the entire rename, so no mixed-name partial result.
-            changes=[]; sql=[];reserved=set()
-            for p in self.catalog.photos(person['activity_id']):
-                if p['person_id']!=person_id: continue
-                originals=self._fresh_assets(p)
-                destinations=self._destinations(originals,p['activity_id'],person_id,p['edited'],p['stem'],name,reserved)
-                reserved.update(d.casefold() for d in destinations)
-                for a,d in zip(originals,destinations):
-                    if str(Path(a['path']).resolve())!=d:
-                        changes.append({'src':a['path'],'dst':d,'sha256':a['sha256'],'move':True})
-                    sql.append(self._asset_sql(a,d))
-            sql.append(('UPDATE people SET name=?,folder=? WHERE id=?',(name,name,person_id)))
-            return self.journal.execute('rename',changes,sql)
-
-    def merge_people(self,source_id,target_id,cancel=lambda:False,progress=lambda n,t,m:None):
-        with self.lock:
-            self._ready(); src=self.catalog.person(source_id); target=self.catalog.person(target_id)
-            if source_id==target_id or src['activity_id']!=target['activity_id'] or src['role']: raise ValueError('请选择同活动内不同的普通人物')
-            ids=[p['id'] for p in self.catalog.photos(src['activity_id']) if p['person_id']==source_id]
-            result=self.set_person(ids,target_id,cancel=cancel,progress=progress)
-            if not result['errors'] and not result['cancelled']:
-                with self.catalog.connect() as db:
-                    # Trashed photos retain their files but follow a merged person
-                    # when restored; never leave a dangling person reference.
-                    db.execute('UPDATE photos SET person_id=? WHERE person_id=?',(target_id,source_id))
-                    db.execute('DELETE FROM people WHERE id=?',(source_id,))
-            return result
-
-    def delete_people(self,person_ids,cancel=lambda:False,progress=lambda n,t,m:None):
-        with self.lock:
-            self._ready();result={'deleted_people':[],'operations':[],'photo_ids':[],'errors':[],'cancelled':False}
-            for ident in dict.fromkeys(person_ids):
-                if cancel():result['cancelled']=True;break
+            result = {
+                "operations": [],
+                "photo_ids": [],
+                "skipped": 0,
+                "errors": [],
+                "cancelled": False,
+            }
+            unique = list(dict.fromkeys(ids))
+            for n, ident in enumerate(unique):
+                if cancel():
+                    result["cancelled"] = True
+                    break
                 try:
-                    person=self.catalog.person(ident)
-                    if person['role']:raise ValueError('合照和待分类是固定分类，不能删除')
-                    target=next(p for p in self.catalog.people(person['activity_id']) if p['role']=='unclassified')
-                    ids=[p['id'] for p in self.catalog.photos(person['activity_id']) if p['person_id']==ident]
-                    batch=self._batch(ids,lambda photo:self._move(photo,person_id=target['id'],manual=True,allow_missing=True),cancel,progress)
-                    for key in ('operations','photo_ids','errors'):result[key].extend(batch[key])
-                    if batch['cancelled'] or cancel():result['cancelled']=True;break
-                    if batch['errors']:continue
-                    self.journal.execute('delete_person',[],[
-                        ('UPDATE photos SET person_id=? WHERE person_id=?',(target['id'],ident)),
-                        ('DELETE FROM people WHERE id=?',(ident,))])
-                    result['deleted_people'].append(ident)
-                    from .cleanup import cleanup_library
-                    activity=self.catalog.rows('SELECT folder FROM activities WHERE id=?',(person['activity_id'],))[0]
-                    cleanup_library(self,self.root/activity['folder']/person['folder'])
-                except Exception as e:result['errors'].append({'id':ident,'message':str(e)})
+                    operation = fn(
+                        self.catalog.photo(ident, include_trashed=include_trashed)
+                    )
+                    if operation:
+                        result["operations"].append(operation)
+                        result["photo_ids"].append(ident)
+                    else:
+                        result["skipped"] += 1
+                except Exception as e:
+                    result["errors"].append({"id": ident, "message": str(e)})
+                finally:
+                    progress(n + 1, len(unique), "整理照片文件")
             return result
 
-    def group(self,photo_id,prefer_export=False):
-        p=self.catalog.photo(photo_id); assets=p['assets']
-        if prefer_export and p['primary_export_id']:
-            assets=[a for a in assets if a['id']==p['primary_export_id']]
-        else: assets=[a for a in assets if a['kind']!='export']
-        return PhotoGroup(p['id'],'',p['stem'],p['captured_at'],[FileAsset(**a) for a in assets])
+    def set_person(
+        self,
+        ids,
+        person_id,
+        manual=True,
+        cancel=lambda: False,
+        progress=lambda n, t, m: None,
+    ):
+        return people.set_person(self, ids, person_id, manual, cancel, progress)
+
+    def set_edited(
+        self, ids, value, cancel=lambda: False, progress=lambda n, t, m: None
+    ):
+        return self._batch(ids, lambda p: self._move(p, edited=value), cancel, progress)
+
+    def trash_photos(self, ids, cancel=lambda: False, progress=lambda n, t, m: None):
+        return trash.trash_photos(self, ids, cancel, progress)
+
+    def restore_photos(self, ids, cancel=lambda: False, progress=lambda n, t, m: None):
+        return trash.restore_photos(self, ids, cancel, progress)
+
+    def purge_trash(self, ids, cancel=lambda: False, progress=lambda n, t, m: None):
+        return trash.purge_trash(self, ids, cancel, progress)
+
+    def delete_activity(
+        self, activity_id, cancel=lambda: False, progress=lambda n, t, m: None
+    ):
+        return activities.delete_activity(self, activity_id, cancel, progress)
+
+    def link_export(self, photo_id, file):
+        return exports.link_export(self, photo_id, file)
+
+    def set_finished(
+        self, ids, value, cancel=lambda: False, progress=lambda n, t, m: None
+    ):
+        return exports.set_finished(self, ids, value, cancel, progress)
+
+    def unlink_export(self, photo_id, asset_id=None):
+        return exports.unlink_export(self, photo_id, asset_id)
+
+    def undo_operation(self, opid):
+        with self.lock:
+            self._ready()
+            op = self.catalog.operation(opid)
+            if op["kind"] != "move" or op["phase"] != "committed" or op["error"]:
+                raise ValueError("此操作不能撤销")
+            data = op["payload"]
+            p = self.catalog.photo(data["photo_id"])
+            if any(p[k] != v for k, v in data["after"].items()):
+                raise ValueError("照片后来已变更，请手动调整，避免覆盖新状态")
+            return self._move(
+                p,
+                **{
+                    "person_id": data["before"]["person_id"],
+                    "edited": data["before"]["edited"],
+                    "manual": data["before"]["manual_person"],
+                },
+            )
+
+    def rename_person(self, person_id, name):
+        return people.rename_person(self, person_id, name)
+
+    def merge_people(
+        self, source_id, target_id, cancel=lambda: False, progress=lambda n, t, m: None
+    ):
+        return people.merge_people(self, source_id, target_id, cancel, progress)
+
+    def delete_people(
+        self, person_ids, cancel=lambda: False, progress=lambda n, t, m: None
+    ):
+        return people.delete_people(self, person_ids, cancel, progress)
+
+    def group(self, photo_id, prefer_export=False):
+        p = self.catalog.photo(photo_id)
+        assets = p["assets"]
+        if prefer_export and p["primary_export_id"]:
+            assets = [a for a in assets if a["id"] == p["primary_export_id"]]
+        else:
+            assets = [a for a in assets if a["kind"] != "export"]
+        return PhotoGroup(
+            p["id"], "", p["stem"], p["captured_at"], [FileAsset(**a) for a in assets]
+        )

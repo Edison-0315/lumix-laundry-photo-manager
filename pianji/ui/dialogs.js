@@ -1,117 +1,16 @@
-import {state,$,assets,el,button,error,toast} from './store.js';
-import {api} from './api.js';
-
-export function modal(title){
-  const dialog=$('#modal'),body=$('#modal-content');body.replaceChildren(el('h2','',title));
-  const content=el('div'),err=el('div','field-error'),buttons=el('div','buttons');body.append(content,err,buttons);
-  buttons.append(button('取消',()=>dialog.close()));
-  if(!dialog.open)dialog.showModal();
-  const submit=(text,fn)=>{
-    const b=button(text,async()=>{b.disabled=true;err.textContent='';try{await fn();if(content.isConnected&&dialog.open)dialog.close()}catch(e){if(!dialog.open&&content.isConnected)dialog.showModal();err.textContent=e.message}finally{b.disabled=false}},'primary');buttons.append(b);return b;
-  };
-  return {dialog,content,err,buttons,submit};
-}
-function field(parent,label,value='',type='text'){
-  const row=el('label','',label),input=el('input');input.type=type;input.value=value;row.append(input);parent.append(row);return input;
-}
-export function confirmAction(title,message,fn){const m=modal(title);m.content.append(el('p','',message));m.submit('确认',fn)}
-export async function settingsDialog(refresh){
-  const settings=await api('get_settings');const m=modal('设置');
-  const path=field(m.content,'Photoshop 程序路径',settings.photoshop||'');path.placeholder='例如 C:\\Program Files\\Adobe\\…\\Photoshop.exe';
-  m.content.append(button('选择 Photoshop.exe',async()=>{try{const p=await api('choose_photoshop');if(p)path.value=p}catch(e){m.err.textContent=e.message}},'outline'));
-  m.content.append(el('p','','可手动填写自定义位置；打开照片后仍需手动标记已修。'));
-  m.content.append(el('div','notice','照片库：'+(settings.library||'尚未选择')+'\n照片保存在你选择的文件夹中；设置与缩略图缓存保存在本机AppData。'));
-  m.content.append(button('重试未完成的文件恢复',async()=>{try{m.dialog.close();await refresh('recover_pending')}catch(e){error(e)}},'outline'));
-  m.submit('保存',async()=>{state.settings=await api('save_settings',{photoshop:path.value.trim()});toast('设置已保存')});
-}
-export async function importDialog(start,refresh,activityName=null){
-  if(!state.settings.library_available){
-    const {libraryDialog}=await import('./library-manager.js');
-    if(!await libraryDialog(refresh))return;
-  }
-  const ids=[...state.selected.sd];if(!ids.length)return;
-  const m=modal('导入所选照片'),labelActivity=el('label','','活动名称'),name=el('select');
-  name.setAttribute('aria-label','活动名称');
-  const placeholder=el('option','','请选择活动');placeholder.value='';placeholder.disabled=true;name.append(placeholder);
-  state.activities.forEach(a=>{const o=el('option','',a.name);o.value=a.name;name.append(o)});labelActivity.append(name);m.content.append(labelActivity);
-  name.value=activityName||state.activities.find(a=>a.id===state.activity)?.name||state.activities[0]?.name||'';
-  m.content.append(button('新建活动',()=>newActivityDialog(async activity=>{await refresh();await importDialog(start,refresh,activity.name)}),'outline'),el('p','small muted',state.activities.length?'选择要导入的活动，或新建一个活动。':'还没有活动，请先点“新建活动”。'));
-  const label=el('label','','导入格式'),select=el('select');for(const [value,text]of[['both','JPEG 和 RAW'],['jpeg','仅 JPEG'],['raw','仅 RAW']]){const o=el('option','',text);o.value=value;select.append(o)}label.append(select);m.content.append(label);
-  select.value=state.format==='all'?'both':state.format;
-  const summary=el('div','notice');
-  const submit=m.submit('开始导入',()=>{if(!name.value)throw new Error('请先选择或新建活动');return start('import_selected',state.scanId,ids,name.value,select.value)});
-  const update=()=>{const groups=state.sourcePhotos.filter(p=>ids.includes(p.id)),files=groups.flatMap(assets).filter(a=>select.value==='both'||a.kind===select.value||select.value==='raw'&&a.kind==='xmp');summary.textContent=`已选 ${ids.length} 张照片，预计 ${files.length} 个文件。\n目标：${name.value?state.settings.library+'\\'+name.value+'\\待分类\\选出原片':'请先选择或新建活动'}\n从来源复制，源文件保留；导入后可识别人脸。`;submit.disabled=!name.value};name.onchange=update;select.onchange=update;update();m.content.append(summary);
-}
-export function newActivityDialog(done,initial=''){
-  const m=modal('新建活动'),name=field(m.content,'活动名称',initial);
-  m.submit('创建活动',async()=>{const activity=await api('create_activity',name.value.trim());await done(activity)});name.focus();name.select();
-}
-export function deletePeopleDialog(ids,start){
-  if(!ids.length)return;
-  confirmAction('删除人物分类',`删除 ${ids.length} 个人物分类，并将其全部原片和成片移回同活动的“待分类”。保留照片、修图阶段和成片关联；回收站中该人物照片恢复后也归入待分类。`,()=>start('delete_people',ids));
-}
-export function deleteActivityDialog(id,start){
-  const activity=state.activities.find(a=>a.id===id);if(!activity)return;
-  const count=state.photos.filter(p=>p.activity_id===id).length;
-  confirmAction('删除活动',`将“${activity.name}”的 ${count} 张照片及关联原片、成片和保留版本移入回收站，并从活动列表移除。恢复其中任意照片时，活动会重新出现。SD 来源和活动文件夹中的其他文件保留。`,()=>start('delete_activity',id));
-}
-export function deleteDialog(ids,start){
-  if(!ids.length)return;
-  const rows=state.photos.filter(p=>ids.includes(p.id)),count=rows.flatMap(assets).length;
-  confirmAction('删除照片',`将所选 ${ids.length} 张照片（${count} 个已关联文件，以及同组保留版本）移到当前照片库的回收站。JPEG、RAW、XMP 和成片一起移入，可从左侧“回收站”恢复；仍占用磁盘空间。SD 卡上的来源照片保留。`,()=>start('trash_photos',ids));
-}
-export async function trashDialog(start,selectedIds=[]){
-  const rows=await api('list_photos',{trashed:true}),m=modal('回收站');
-  const chosen=new Set(selectedIds.filter(id=>rows.some(p=>p.id===id)));
-  m.content.append(el('p','',`${rows.length} 张照片 · 仅当前照片库。单击选择或取消，支持多选；永久删除后不可恢复。`));
-  const toolbar=el('div','trash-toolbar'),count=el('span','small muted'),all=button('全选',()=>{if(rows.every(p=>chosen.has(p.id)))chosen.clear();else rows.forEach(p=>chosen.add(p.id));sync()});toolbar.append(all,count);m.content.append(toolbar);
-  const list=el('div','trash-list');
-  const checks=new Map();
-  const run=async(name,ids)=>{const snap=await start(name,ids);if(snap?.status==='succeeded')await trashDialog(start)};
-  for(const p of rows){const row=el('div','library-row'),info=button('',e=>{if(e.detail>1)return;chosen.has(p.id)?chosen.delete(p.id):chosen.add(p.id);sync()},'trash-choice');info.setAttribute('aria-label','选择 '+p.stem);info.append(el('strong','',p.stem),el('span','small muted',(p.activity_name||state.activities.find(a=>a.id===p.activity_id)?.name||'活动')+' · '+(p.file_count??assets(p).length)+' 个关联文件'+(p.purge_pending?' · 永久删除未完成，请重试':p.missing?' · 部分文件缺失':'')));checks.set(p.id,info);
-    const restore=button('恢复',async()=>{try{await run('restore_photos',[p.id])}catch(e){m.err.textContent=e.message}},'outline');restore.disabled=Boolean(p.purge_pending);row.append(info,restore);list.append(row)}
-  m.content.append(list);m.buttons.replaceChildren(button('关闭',()=>m.dialog.close()));
-  function confirmDelete(ids){
-    if(!ids.length)return;
-    const selectedRows=rows.filter(p=>ids.includes(p.id)),files=selectedRows.reduce((sum,p)=>sum+(p.file_count??assets(p).length),0),confirm=modal('永久删除照片');
-    confirm.content.append(el('p','',`将永久删除 ${ids.length} 张照片（${files} 个关联文件及保留版本）。此操作不可恢复，仅删除当前照片库回收站文件；SD 来源和正常照片保留。`));
-    confirm.buttons.replaceChildren(button('取消',()=>trashDialog(start,[...chosen]).catch(error)));
-    const execute=confirm.submit('确认永久删除',()=>run('purge_trash',ids));execute.classList.add('destructive');
-  }
-  const erase=button('永久删除所选',()=>confirmDelete([...chosen]),'danger outline'),restoreSelected=button('恢复所选',async()=>{try{await run('restore_photos',[...chosen])}catch(e){m.err.textContent=e.message}},'outline');
-  m.buttons.append(restoreSelected,erase,button('清空回收站',()=>confirmDelete(rows.map(p=>p.id)),'danger outline'));
-  function sync(){count.textContent=`已选 ${chosen.size} 张`;all.textContent=rows.length&&rows.every(p=>chosen.has(p.id))?'取消全选':'全选';all.disabled=!rows.length;erase.disabled=!chosen.size;restoreSelected.disabled=!chosen.size||rows.some(p=>chosen.has(p.id)&&p.purge_pending);for(const [id,node]of checks){node.classList.toggle('checked',chosen.has(id));node.setAttribute('aria-pressed',String(chosen.has(id)))}}
-  if(!rows.length)m.buttons.lastElementChild.disabled=true;
-  sync();
-}
-export function assignDialog(ids,start,refresh){
-  const m=modal('调整人物');m.content.append(el('p','',`将 ${ids.length} 张照片及关联文件整理到所选人物文件夹。`));
-  const select=el('select');for(const p of state.people){const o=el('option','',p.name);o.value=p.id;select.append(o)}m.content.append(select);
-  m.content.append(button('新建人物',()=>newPersonDialog(async person=>{await refresh();await start('set_person',ids,person.id)}),'outline'));
-  m.submit('移动到此人物',()=>start('set_person',ids,select.value));
-}
-export function newPersonDialog(done){
-  if(!state.activity){toast('请先选择活动');return}
-  const m=modal('新建人物'),name=field(m.content,'人物名称');
-  m.submit('创建',async()=>{const person=await api('create_person',state.activity,name.value);await done(person)});name.focus();
-}
-export function managePeopleDialog(start,initialId=null){
-  const normal=state.people.filter(p=>!p.role);if(!normal.length){toast('还没有普通人物，可以先识别人脸或新建人物');return}
-  const m=modal('管理人物'),select=el('select');normal.forEach(p=>{const o=el('option','',p.name);o.value=p.id;select.append(o)});m.content.append(select);
-  if(initialId&&normal.some(p=>p.id===initialId))select.value=initialId;
-  const name=field(m.content,'新名称',normal.find(p=>p.id===select.value).name);select.onchange=()=>name.value=normal.find(p=>p.id===select.value).name;
-  m.submit('重命名',()=>start('rename_person',select.value,name.value));
-  const target=el('select');state.people.forEach(p=>{const o=el('option','',p.name);o.value=p.id;target.append(o)});
-  const label=el('label','','或合并到');label.append(target);m.content.append(label,el('p','','合并会移动全部原片和成片，人工归属将保留。'));
-  m.buttons.prepend(button('合并人物',async()=>{try{if(select.value===target.value)throw new Error('请选择另一个人物');m.dialog.close();confirmAction('合并人物','确认将所选人物的全部照片移到目标人物？',()=>start('merge_people',select.value,target.value))}catch(e){m.err.textContent=e.message}},'outline'));
-}
-export function resultDialog(snapshot,kind=''){
-  const scanCancelled=kind==='scan'&&snapshot.status==='cancelled';
-  const m=modal(scanCancelled?'读取已取消':kind==='scan'?'读取结果':snapshot.status==='failed'?'任务未完成':snapshot.status==='cancelled'?'任务已取消':'部分文件需要处理');
-  const result=snapshot.result||{};
-  m.content.append(el('p','',scanCancelled?'已停止读取，保留此前的选片结果。':kind==='scan'?(result.scan_id?`已读取 ${result.photos.length} 张可用照片，下面的文件或文件夹未能读取；其他照片可继续选片。`:'未读取到可用照片，保留此前的选片结果。请查看具体错误路径。'):snapshot.status==='cancelled'?'已经完整完成的照片保留，未完成的文件已尝试恢复；可重新执行。':'已完成的照片保留，请检查下面的文件后重试。'));
-  const list=el('div','notice');list.style.maxHeight='300px';list.style.overflow='auto';
-  for(const e of snapshot.errors||[])list.append(el('p','',(e.operation||'')+' '+(e.path||e.name||e.id||'')+(e.winerror?` · WinError ${e.winerror}`:'')+' '+(e.message||JSON.stringify(e))));
-  if(!list.children.length)list.textContent=`完成 ${result.imported?.length??result.classified??snapshot.done??0} 项。`;
-  m.content.append(list);m.buttons.replaceChildren(button('知道了',()=>m.dialog.close(),'primary'));
-}
+/** Compatibility exports; implementations are grouped by feature. */
+export { modal, confirmAction } from "./core/modal.js";
+export { settingsDialog } from "./features/settings-dialog.js";
+export { importDialog, newActivityDialog } from "./features/import-dialogs.js";
+export {
+  deletePeopleDialog,
+  assignDialog,
+  newPersonDialog,
+  managePeopleDialog,
+} from "./features/people-dialogs.js";
+export {
+  deleteActivityDialog,
+  deleteDialog,
+  trashDialog,
+} from "./features/trash-dialogs.js";
+export { resultDialog } from "./features/result-dialog.js";
