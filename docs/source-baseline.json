@@ -1,0 +1,370 @@
+{
+  "repository": "https://github.com/Edison-0315/lumix-laundry-photo-manager",
+  "commit": "0516266f0b20b91188937e79ee1ae0b9116853dc",
+  "application_and_build_sources": [
+    {
+      "path": "packaging/build.ps1",
+      "lines": 26,
+      "sha256": "b6f0be6babad5e412cb32549d4d6db744cf38bf2810d7d9c331fa5714e5458cc"
+    },
+    {
+      "path": "packaging/collect_licenses.py",
+      "lines": 22,
+      "sha256": "a0981411d41a8990429f44c09d8d0b17ee8cea3326fd077fb5f07425e50c9372"
+    },
+    {
+      "path": "packaging/fetch_models.py",
+      "lines": 37,
+      "sha256": "73b70b0ddb624c08c71f6e764f27a4e85ee865a34253172636f6949e85063b0e"
+    },
+    {
+      "path": "packaging/make_icon.py",
+      "lines": 10,
+      "sha256": "32cd7f546c829d15fd601ce5d1258a1a3976c2911d9625b93eb30663b37486fb"
+    },
+    {
+      "path": "packaging/pianji.spec",
+      "lines": 11,
+      "sha256": "978639209c48e302de9ea0eb880ed35b0b144e5ec1c4c593cf8813940fe7031c"
+    },
+    {
+      "path": "pianji/__init__.py",
+      "lines": 3,
+      "sha256": "c1d39762c82bc70fb0e14a939cb76e08f0675213d756c3c73210c9ca61fbc0dd"
+    },
+    {
+      "path": "pianji/app.py",
+      "lines": 23,
+      "sha256": "76056b23962c506f25086e8466d5cd932a240ab659851957d3fd3c6282ba00f4"
+    },
+    {
+      "path": "pianji/bridge.py",
+      "lines": 632,
+      "sha256": "696fb310b98bc1a5d32f2e95aeffdb630716462c32f6910504d9263c570d3ac9"
+    },
+    {
+      "path": "pianji/catalog.py",
+      "lines": 90,
+      "sha256": "72c7beb1cd02abd7660c3e4bf32769032b4f00de9b7c8209cdb7e9abe72c3e98"
+    },
+    {
+      "path": "pianji/cleanup.py",
+      "lines": 50,
+      "sha256": "938d1e758f3295bc640f023132e417aac33ab4cbbe67f2735ceb4234370a7a24"
+    },
+    {
+      "path": "pianji/discovery.py",
+      "lines": 94,
+      "sha256": "a101f31b51681e9555dad0862f3f646cdb26f5ec9461973ae7347c5654fdd99f"
+    },
+    {
+      "path": "pianji/domain.py",
+      "lines": 52,
+      "sha256": "68242366270267ba797cb55b111b4ccead93d3372edfed8ff4247ae4a483da76"
+    },
+    {
+      "path": "pianji/faces.py",
+      "lines": 97,
+      "sha256": "a8fd184337acc125a40e2c41a27b520fc52e76acd789882196ee6f6323280596"
+    },
+    {
+      "path": "pianji/fileops.py",
+      "lines": 115,
+      "sha256": "a6bb3f7f510881020e0f0500927c5d104b26d8a13948b4381d031de380599b73"
+    },
+    {
+      "path": "pianji/jobs.py",
+      "lines": 51,
+      "sha256": "87f09565a4f3fc461fd9c446f9e945ea0bee1c082666a0efcd1d013502daa0de"
+    },
+    {
+      "path": "pianji/library.py",
+      "lines": 347,
+      "sha256": "28a63af872236f6bcd2ea8cea5684402da13685fecd34958234362dab7f1a792"
+    },
+    {
+      "path": "pianji/library_deletion.py",
+      "lines": 111,
+      "sha256": "706471547d3a724ec8c2fde1a1538fac6525f25e11a7864f249a92adc1577b24"
+    },
+    {
+      "path": "pianji/locking.py",
+      "lines": 71,
+      "sha256": "71b4d5e55006ef47245ba43e81bb4b6bd75784976aa35f8b159bcbda12dae36a"
+    },
+    {
+      "path": "pianji/metadata.py",
+      "lines": 69,
+      "sha256": "23da90cb023d5eff87ca1e4d917c21334d4fe211fdb9e1e89b0c41cf50762a9c"
+    },
+    {
+      "path": "pianji/paths.py",
+      "lines": 16,
+      "sha256": "9d620425273501466b67ef6658c94528c5c0c328b913df2f0bdbe45a7ab7630b"
+    },
+    {
+      "path": "pianji/permanent.py",
+      "lines": 65,
+      "sha256": "c5a598b8a47b83910d5b70c875d0b22e2213c9c0d17c0abc9ef025b0d060844e"
+    },
+    {
+      "path": "pianji/photoshop.py",
+      "lines": 21,
+      "sha256": "5b85e5f7f2fdda3bf7590e4bc17492ccfdcde00ea94adf0d3fdad27c061e7d70"
+    },
+    {
+      "path": "pianji/previews.py",
+      "lines": 77,
+      "sha256": "d0336ea83c63b880268a09acf9b88589bf42e47c30c13c15ade69b721f4ce5dc"
+    },
+    {
+      "path": "pianji/selftest.py",
+      "lines": 123,
+      "sha256": "4187aaf2811a227c5f1b7362e6d0dd9982087ba9c1ea068ad8c783496159fd17"
+    },
+    {
+      "path": "pianji/services/__init__.py",
+      "lines": 1,
+      "sha256": "3dc0325e71a19159e5f47da7e1c4a4991225a23ef8891378ee9dc7486a9d2227"
+    },
+    {
+      "path": "pianji/services/activities.py",
+      "lines": 78,
+      "sha256": "45ab07891ec2f59bd0af0fd53614bb9e57626d007038f30ae53d57423bf6471d"
+    },
+    {
+      "path": "pianji/services/exports.py",
+      "lines": 148,
+      "sha256": "3907d3a82a28ee670996efd5e9aed21b34426e76bc5f3174ee10b58c41545abd"
+    },
+    {
+      "path": "pianji/services/imports.py",
+      "lines": 204,
+      "sha256": "e3e20e8a8caabd3d7c2499aa559cf2042ba5545150ccf3c292c3347469ec6bd9"
+    },
+    {
+      "path": "pianji/services/people.py",
+      "lines": 169,
+      "sha256": "fcd55052a8512c455ca9b0fce8b92af3ae46aad112d804915ee0ff463b1354f3"
+    },
+    {
+      "path": "pianji/services/photo_reads.py",
+      "lines": 46,
+      "sha256": "0974e12e5c9bc35d7662e3c22b60043f7779c473320aae0a706dc98418e10c8e"
+    },
+    {
+      "path": "pianji/services/source.py",
+      "lines": 39,
+      "sha256": "ff4ef188f9ac5d9d95a57da082b08e84d7e905c168ea283c7f31be5fe6a98d59"
+    },
+    {
+      "path": "pianji/services/trash.py",
+      "lines": 137,
+      "sha256": "6e45a9926e2ab08f282c74dca494954408fd74aeae7473351c55b75c59345c71"
+    },
+    {
+      "path": "pianji/ui/api.js",
+      "lines": 11,
+      "sha256": "1473ae8562437dd69dde5a9289ab053b630c8dd442262dea5d5839840566b687"
+    },
+    {
+      "path": "pianji/ui/app.css",
+      "lines": 13,
+      "sha256": "400522b17bd58a9c6fe25160dea100c8e376f83130a4abe812ec8efdc9f98fe5"
+    },
+    {
+      "path": "pianji/ui/app.js",
+      "lines": 69,
+      "sha256": "3721e20fcbc02555b61ed7df3173092aab16338502770d942f92cb66ac5f2497"
+    },
+    {
+      "path": "pianji/ui/choice-list.js",
+      "lines": 14,
+      "sha256": "1fbca1d0010922910ae1e1f2439a806959eb9cbeeb2b8ce7c18ae73de57f2972"
+    },
+    {
+      "path": "pianji/ui/chrome-motion.js",
+      "lines": 49,
+      "sha256": "31f4b2721b6f6a01de24db8ab32accb3650950be783ea47790c67b5654652c5f"
+    },
+    {
+      "path": "pianji/ui/context-menu.js",
+      "lines": 68,
+      "sha256": "4a837cdc14b9fc2722172a071e0f3619d5b91b3151f8f0d1d09c1e4c7fc7c565"
+    },
+    {
+      "path": "pianji/ui/core/dom.js",
+      "lines": 25,
+      "sha256": "8a342ea96940bc30d819e775e499c6e2e2094809ed9ba4b5e20a9631c747d9d7"
+    },
+    {
+      "path": "pianji/ui/core/modal.js",
+      "lines": 59,
+      "sha256": "ccdab7c1907b3b0224f062325ec3586f27da57724ab2976745800c83614639f4"
+    },
+    {
+      "path": "pianji/ui/core/queries.js",
+      "lines": 123,
+      "sha256": "6ea49b8cbee89d23d0466e55329a95e139a89abfce401840d0458824c99630d3"
+    },
+    {
+      "path": "pianji/ui/core/state.js",
+      "lines": 31,
+      "sha256": "65c348c89e92ab0bf618160b25f7fdcfafe2a2521cdd213acf869711f1831e58"
+    },
+    {
+      "path": "pianji/ui/dialogs.js",
+      "lines": 16,
+      "sha256": "7992c13586070e86c149ed82c269588873a3ced1b5e11a4e070e1bc763b9a20a"
+    },
+    {
+      "path": "pianji/ui/features/import-dialogs.js",
+      "lines": 102,
+      "sha256": "020e6307f0cb650120329fa0cbd94f7da8b47579cde09214b1b076b0bb782933"
+    },
+    {
+      "path": "pianji/ui/features/inspector.js",
+      "lines": 295,
+      "sha256": "5bebee62dc2d13fa18b430db057870f9f2f2c6a7896e69169a2f73e91eb0c4a8"
+    },
+    {
+      "path": "pianji/ui/features/people-dialogs.js",
+      "lines": 107,
+      "sha256": "4437877d2f02d4ef462b682f157d99d454ce22a5f6702d42effa26c56054a854"
+    },
+    {
+      "path": "pianji/ui/features/result-dialog.js",
+      "lines": 56,
+      "sha256": "2f6ea36fd72d6aa27a5ab4fa5239790e44f059703c6010a24cd06bff60487381"
+    },
+    {
+      "path": "pianji/ui/features/settings-dialog.js",
+      "lines": 56,
+      "sha256": "fc0d31e0db887d7d9dfead3df14965594f050abb054057e09920ee1db0ad7008"
+    },
+    {
+      "path": "pianji/ui/features/sidebar.js",
+      "lines": 287,
+      "sha256": "afa594bed2b1301b48e9f6d0c671ac003e7f0555d24ea5b0d904dec33cd3a977"
+    },
+    {
+      "path": "pianji/ui/features/tasks.js",
+      "lines": 114,
+      "sha256": "ecd537d9691adcf7085611649b168fee292771b40734efb4918b9d67d1bcf45e"
+    },
+    {
+      "path": "pianji/ui/features/trash-dialogs.js",
+      "lines": 164,
+      "sha256": "cbfa7e9397ecb381257327d448393235e2fc6d1027325611424718a48dc3200e"
+    },
+    {
+      "path": "pianji/ui/features/workspace.js",
+      "lines": 285,
+      "sha256": "5327fa17ab1b3371dc305d61ea3e2026633d2507a0061430a561a24fb693c4e7"
+    },
+    {
+      "path": "pianji/ui/gallery.css",
+      "lines": 65,
+      "sha256": "e950f8bd32ae6eff5ecb9bbfb9381330bead40ced7159028b8e6e2367bdb19c9"
+    },
+    {
+      "path": "pianji/ui/gallery.js",
+      "lines": 104,
+      "sha256": "fae04841a276d014ebdf80354c4d62c0ab8c42345777af889b75964aba8566e7"
+    },
+    {
+      "path": "pianji/ui/glass-optics.js",
+      "lines": 25,
+      "sha256": "033b41b371d8c19ef4a37dd9ce6b2e0a40ddbf8da66af064d9303424989ccee7"
+    },
+    {
+      "path": "pianji/ui/glass.css",
+      "lines": 157,
+      "sha256": "b62378c1456f01be225e5905d9b571fb19bb8694cc13575366c63e3ced1c5d8b"
+    },
+    {
+      "path": "pianji/ui/glass.js",
+      "lines": 42,
+      "sha256": "34892ef421622bbbfbab5cc86a643fa60db3972e4a8f8c21d45a06a01375a89c"
+    },
+    {
+      "path": "pianji/ui/icons.js",
+      "lines": 35,
+      "sha256": "3afd5935118c372a69e57fc6a3d4225d8de52e0870ce04c4ea06c8ec934408a6"
+    },
+    {
+      "path": "pianji/ui/index.html",
+      "lines": 32,
+      "sha256": "a1c8f4b2a3f0dd740e8fa79b333e9303779d8cf0d2bb474e13bdd09a216af7ff"
+    },
+    {
+      "path": "pianji/ui/library-manager.js",
+      "lines": 64,
+      "sha256": "714dfb2ba48a7f88e6f55421692f49183fa5694b70a8e73923dbe90e1b4a708b"
+    },
+    {
+      "path": "pianji/ui/motion.js",
+      "lines": 25,
+      "sha256": "b6f277e1ebb06d4f66e0bae85a1deafd985ad8892c044e73c55b1bd89b3bedbd"
+    },
+    {
+      "path": "pianji/ui/navigation.js",
+      "lines": 23,
+      "sha256": "a8e910e85700805241204da913212e5c4db5b56412e6b20344dfd9a865353e7c"
+    },
+    {
+      "path": "pianji/ui/pearl.css",
+      "lines": 91,
+      "sha256": "18f70db0be225a11c62adb5fc0025f40f4834f2870a95ed85deadc8d0f214c23"
+    },
+    {
+      "path": "pianji/ui/previews.js",
+      "lines": 11,
+      "sha256": "2841fc6cb938b1a0467358195c06365965f7b55c5c36ddb48f90647b09a5bb27"
+    },
+    {
+      "path": "pianji/ui/selection.js",
+      "lines": 59,
+      "sha256": "59a5597ed6d868f9d3f804f825f13707f750771bbf04b62291932820f13d456a"
+    },
+    {
+      "path": "pianji/ui/sidebar-motion.js",
+      "lines": 44,
+      "sha256": "9325e162ab920f37fc73653fb5b67b76ebbcae30fdf1c8d948f023ab798a712f"
+    },
+    {
+      "path": "pianji/ui/store.js",
+      "lines": 18,
+      "sha256": "c21855056a122246377750a19631dece74909fe481bfc1b8babb9826e3f4e19c"
+    },
+    {
+      "path": "pianji/ui/thumbnail-size.js",
+      "lines": 24,
+      "sha256": "9a54679616f22973587acb0787a9e18cb702a13c4556c3640e94450339893dec"
+    },
+    {
+      "path": "pianji/ui/viewer.js",
+      "lines": 161,
+      "sha256": "fffa7d69ffeb7286bba3b50d6947014bef6286999327fdce21f481e0c3baf892"
+    },
+    {
+      "path": "pianji/ui/workspace-motion.js",
+      "lines": 31,
+      "sha256": "d79ca1f84c985e524324ce42995dcf282dae250ce38c6379457b16ee1bb01cf4"
+    },
+    {
+      "path": "pianji/window_motion.py",
+      "lines": 117,
+      "sha256": "2599be89e1c2c1b674036fa92a340f9bd90b8c68a924538c7f8358ec1f28fc86"
+    },
+    {
+      "path": "run.py",
+      "lines": 24,
+      "sha256": "1895de6a48f8cda229e2afb6834f87ed5d498ba7f7e26367ff857952fbdc93f8"
+    }
+  ],
+  "migration_document": {
+    "path": "/Users/edison/Downloads/MACOS_MIGRATION.md",
+    "sha256": "dbe883d62d7d85907066bc081c1d5237a3b9f6992da71b1083b3a6ec65ab3c3b"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "python": {
+    "version": "3.12.16",
+    "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.12.16%2B20261026-aarch64-apple-darwin-install_only_stripped.tar.gz",
+    "sha256": "353d5f1b4fd2715e7053f12f068435d5bbad16b91e057006b5d01e0925709a7e"
+  },
+  "pillow": {
+    "version": "13.0.0",
+    "url": "https://files.pythonhosted.org/packages/39/4b/f2ed53d83aa44ac19599ac0a54897f867fafb95f406980d1e24083f8cbe3/pillow-13.0.0-cp312-cp312-macosx_11_0_arm64.whl",
+    "sha256": "fc481f742ccda20e9ed760b8f978dff50f2a4e9bc253ac167fb0a05b0783ef52"
+  },
+  "packages": [
+    {
+      "name": "numpy",
+      "version": "2.5.4",
+      "url": "https://files.pythonhosted.org/packages/31/2f/5ea3570fcb8ccd0882bea99436a513b2c85dad8f774a2057849130a8fb99/numpy-2.5.4-cp312-cp312-macosx_14_0_arm64.whl",
+      "sha256": "9cb18a327b49c5c337f972b03682f6a49855525faaf3c0d3e9c96cd0fd8880a8"
+    },
+    {
+      "name": "opencv-python-headless",
+      "version": "4.13.0.92",
+      "url": "https://files.pythonhosted.org/packages/79/42/2310883be3b8826ac58c3f2787b9358a2d46923d61f88fedf930bc59c60c/opencv_python_headless-4.13.0.92-cp37-abi3-macosx_13_0_arm64.whl",
+      "sha256": "1a7d040ac656c11b8c38677cc8cccdc149f98535089dbe5b081e80a4e5903209"
+    },
+    {
+      "name": "rawpy",
+      "version": "0.27.1",
+      "url": "https://files.pythonhosted.org/packages/42/a3/599797f509dde44c13088bc7c7f31c5c9741c29d5feb00c1dd2ae13ca908/rawpy-0.27.1-cp312-cp312-macosx_11_0_arm64.whl",
+      "sha256": "9c5c7b396283301ddd8e04100091624a371c4f9bb2ee79fd33d21e1b6c244009"
+    }
+  ]
+}

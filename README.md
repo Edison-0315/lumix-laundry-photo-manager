@@ -1,57 +1,39 @@
-# LUMIX 洗衣机管理器 · v0.12.1 正式版
+# LUMIX macOS 照片管理器
 
-面向摄影师的 Windows 11 本机照片分类与修图管理工具。先在 SD 卡选片，再按活动、人物和修图阶段整理照片，关联 JPEG、RAW 与成片。
-
-**[下载 Windows 正式版](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/download/v0.12.1/LUMIX-Photo-Manager-Windows-0.12.1.zip)** · **[全部版本](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases)** · **[完整使用说明](docs/使用说明.md)**
-
-## 更新宣传片
-
-[![0.12.1 更新宣传片](docs/media/update-0.12.1-preview.gif)](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/download/v0.12.1/LUMIX-Update-0.12.1-1080p60.mp4)
-
-[观看或下载完整宣传片（90.35 秒，1080p60，无音乐、无旁白）](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/download/v0.12.1/LUMIX-Update-0.12.1-1080p60.mp4)。展示真实 Windows 应用的导航、预览、窗口与文件夹动效、缩略图修复和模块架构。保留旋转融合片头并加入“更新”，片尾附 Edison-0315 与 GitHub。
-
-## 本次更新
-
-- **缩略图调整更自然：** 文件夹封面保持 4:3，卡片宽度跟随 80–720 滑杆，长名称两行显示；连续输入按显示帧合并，减少重复样式计算。
-- **累计交互与动效升级：** 收录 0.8–0.12 的深色玻璃、连续导航、指向缩放预览、窗口与弹窗开合，以及文件夹进入和返回转场。快速反向操作和减少动态均有对应处理。
-- **模块架构整理：** 前端拆分为组合入口、功能控制器和共享基础；后端按来源、导入、人物、成片、回收站、活动和照片读取组织服务。复用统一照片库、锁和文件日志，保留 .片集 格式与已有桥接接口。
-
-[详细更新日志与架构说明](docs/发布说明-0.12.1.md) · [代码地图](docs/代码地图.md)
+面向 Apple Silicon（M 系列）的 macOS 独立版。SwiftUI/AppKit 提供原生界面、动画和系统集成，应用内嵌 Python、图像依赖及 YuNet/SFace 模型，运行时无需另装 Python。当前提供本机预览版，按用户要求以核心功能可用为目标收尾，后续优先修复影响使用的问题。
 
 ## 使用
 
-1. 下载 Windows ZIP，完整解压后运行“洗衣机管理器.exe”。无需 Python，需要 Microsoft Edge WebView2 Runtime。
-2. 新建或打开照片库，建立活动；在“选片”读取 SD 卡或来源文件夹，导入所选照片。
-3. 使用本机人脸分组整理人物，检查“待分类”，通过自定义路径关联本地 Photoshop。
-4. 按“选出原片 → 已修原片 → 成片”管理进度，随后自行通过微信等工具分享。
+本机运行包、使用步骤及限制见 [预览版说明](docs/LOCAL_PREVIEW.md)；最近一次产物与验证见 [打包记录](docs/NATIVE_PACKAGING_VALIDATION.md)。当前为 0.1.2 (3)，本地 ad hoc 签名、未公证。
 
-侧栏单击进入；主区单击选择或取消、可多选，双击进入或预览。预览中滚轮围绕鼠标缩放，左右键切图，空格切换选择。现有照片库继续使用；换版本前关闭旧程序。
+macOS 源码与 Windows 版共用 GitHub 仓库，在 [codex/macos 分支](https://github.com/Edison-0315/lumix-laundry-photo-manager/tree/codex/macos) 单独维护；Windows 的 `main` 分支及原有版本保持独立。
 
-SD 来源只读，导入只复制。正常使用不上传照片。照片删除先进入应用回收站；永久删除另行确认。整库删除输入库名确认后交 Windows 系统回收站处理。
+已接入来源只读扫描、JPEG/RAW/XMP 配对、筛选、跨目录选片、拖动框选及边缘滚动、缩略图/EXIF/大图；本机库新建/打开/最近记录、活动与复制导入、去重补齐、人物人工及自动整理、已修标记、成片版本/封面/解除、缺失文件找回、撤销归档、应用回收站和整库系统废纸篓。支持深/浅/系统外观、键盘选片和版本门控的原生玻璃材质。
 
-## 下载与校验
+来源与 `Reference/Windows` 只读。现阶段不开发 Windows 数据互通、旧库转换或双向写回；已有旧库只读浏览可保留。真实 DC-S5M2 RW2 已验证一张，其他相机和样本不据此宣称支持。
 
-发布页包含 Windows 便携包、对应源码包、宣传片 MP4、可编辑宣传片工程和 SHA-256 校验文件。此次保留之前验证的 0.12.1 程序包与源码包内容，未重新构建 Windows 程序，未包含 macOS 开发内容。
+完整辅助审计、物理外置介质、更多复杂人脸/RAW、Photoshop 实际打开以及其他目标系统未做完整验证，按当前范围暂缓。正式分发的许可义务、签名和公证流程另行处理；这些专项不作为本轮本机使用的交付门槛，也不宣称已通过。
 
-## 版本下载
+## 开发
 
-0.1–0.5 使用原名称“片集”，0.6 起更名“洗衣机管理器”。每个发布页保留对应 Windows 程序包、源码包和 SHA-256 校验值。
+打开 `macos/LaundryPhotoManager.xcodeproj`，选择 `LaundryPhotoManager` / My Mac。Debug、Release 固定 arm64，最低构建目标 macOS 14；当前实机验证 macOS 27.2。
 
-| 版本 | 主要更新 | 发布页 |
-|---|---|---|
-| **0.12.1 正式版** | 缩略图比例与连续调整修复；累计玻璃动效升级；前后端模块化。 | [下载](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/tag/v0.12.1) |
-| 0.1 | 首个 Windows 便携版：选片、导入、本机人脸分组、Photoshop 关联和原片归档。 | [下载](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/tag/v0.1.0) |
-| 0.2 | 优化选片取消、批量选择和缩略图；补全文件夹浏览、成片标记及导入流程。 | [下载](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/tag/v0.2.0) |
-| 0.3 | 支持 JPEG/RAW 分目录读取，增加照片库管理和照片删除入口。 | [下载](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/tag/v0.3.0) |
-| 0.4 | 隔离不可读 SD 条目，补全活动创建、人物管理与人物文件夹浏览。 | [下载](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/tag/v0.4.0) |
-| 0.5 | 完善回收站永久删除、多选、侧栏导航、人物文件夹示例与返回功能。 | [下载](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/tag/v0.5.0) |
-| 0.6 | 更新洗衣机管理器品牌、活动删除、导入活动选择、照片参数与格式徽标。 | [下载](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/tag/v0.6.0) |
-| 0.7 | 清理托管空目录，支持照片库回收删除，更新圆角与磨砂界面。 | [下载](https://github.com/Edison-0315/lumix-laundry-photo-manager/releases/tag/v0.7.0) |
+首次准备运行组件：
 
-## 源码开发
+```sh
+/usr/bin/python3 -I -B macos/Runtime/prepare_runtime.py
+/usr/bin/python3 -I -B macos/Models/prepare_models.py
+```
 
-Python 3.12 x64；安装 requirements-dev.txt 后运行 python run.py。重新打包前用 python packaging/fetch_models.py 下载并校验模型。运行测试使用 python -m pytest，Windows 打包脚本为 packaging/build.ps1。
+日常构建运行：`./script/build_and_run.sh`。生成本机 Release app/zip：`/usr/bin/python3 -I -B macos/Packaging/package_local.py`。模型和运行时按固定摘要下载，源码构建首次需要网络；已生成 app 使用内嵌组件。
 
-第三方依赖与模型许可见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 和 licenses/。旧宣传片素材来源见 docs/media/materials.md；更新宣传片素材与许可见发布附件的可编辑工程。
+主要记录：
 
-由 Edison-0315 制作。LUMIX 字标用于本项目的个人设计展示，本项目与 Panasonic / LUMIX 无官方隶属关系。
+- [架构](docs/NATIVE_ARCHITECTURE.md)、[实施计划](docs/IMPLEMENTATION_PLAN.md)、[进度交接](docs/DEVELOPMENT_HANDOFF.md)
+- [Windows 源码基线](docs/source-baseline.json)、[适配业务来源](macos/Backend/PROVENANCE.json)
+- [来源交互](docs/NATIVE_INTERACTION_VALIDATION.md)、[导入整理](docs/NATIVE_IMPORT_VALIDATION.md)、[成片](docs/NATIVE_EXPORT_VALIDATION.md)
+- [应用回收站](docs/NATIVE_TRASH_VALIDATION.md)、[整库回收](docs/NATIVE_LIBRARY_RECYCLE_VALIDATION.md)、[卷身份](docs/NATIVE_VOLUME_VALIDATION.md)
+- [人物分类](docs/NATIVE_FACES_VALIDATION.md)、[外观](docs/NATIVE_APPEARANCE_VALIDATION.md)、[键盘](docs/NATIVE_KEYBOARD_VALIDATION.md)、[性能](docs/NATIVE_PERFORMANCE_VALIDATION.md)
+- [第三方声明](macos/ThirdPartyNotices/README.txt)，也可从 app 帮助菜单打开
+
+仅检查新增或受改动影响的部分，不重复已通过且未受影响的套件。不运行 Windows 项目的破坏性自测。

@@ -1,0 +1,22 @@
+{
+  "repository": "https://github.com/Edison-0315/lumix-laundry-photo-manager",
+  "commit": "0516266f0b20b91188937e79ee1ae0b9116853dc",
+  "files": {
+    "__init__.py": "c1d39762c82bc70fb0e14a939cb76e08f0675213d756c3c73210c9ca61fbc0dd",
+    "domain.py": "68242366270267ba797cb55b111b4ccead93d3372edfed8ff4247ae4a483da76",
+    "paths.py": "9d620425273501466b67ef6658c94528c5c0c328b913df2f0bdbe45a7ab7630b",
+    "catalog.py": "72c7beb1cd02abd7660c3e4bf32769032b4f00de9b7c8209cdb7e9abe72c3e98",
+    "locking.py": "71b4d5e55006ef47245ba43e81bb4b6bd75784976aa35f8b159bcbda12dae36a",
+    "library.py": "28a63af872236f6bcd2ea8cea5684402da13685fecd34958234362dab7f1a792",
+    "cleanup.py": "938d1e758f3295bc640f023132e417aac33ab4cbbe67f2735ceb4234370a7a24",
+    "services/__init__.py": "3dc0325e71a19159e5f47da7e1c4a4991225a23ef8891378ee9dc7486a9d2227",
+    "services/imports.py": "e3e20e8a8caabd3d7c2499aa559cf2042ba5545150ccf3c292c3347469ec6bd9",
+    "services/people.py": "fcd55052a8512c455ca9b0fce8b92af3ae46aad112d804915ee0ff463b1354f3",
+    "services/activities.py": "45ab07891ec2f59bd0af0fd53614bb9e57626d007038f30ae53d57423bf6471d",
+    "services/exports.py": "3907d3a82a28ee670996efd5e9aed21b34426e76bc5f3174ee10b58c41545abd",
+    "services/trash.py": "6e45a9926e2ab08f282c74dca494954408fd74aeae7473351c55b75c59345c71",
+    "permanent.py": "c5a598b8a47b83910d5b70c875d0b22e2213c9c0d17c0abc9ef025b0d060844e",
+    "faces.py": "a8fd184337acc125a40e2c41a27b520fc52e76acd789882196ee6f6323280596",
+    "previews.py": "d0336ea83c63b880268a09acf9b88589bf42e47c30c13c15ade69b721f4ce5dc"
+  }
+}
